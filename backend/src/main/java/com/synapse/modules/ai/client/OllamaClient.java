@@ -9,13 +9,16 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 /**
  * Client for Ollama local API. Sends prompts and receives responses from Llama 3.
+ * Only active when synapse.ai.provider=ollama.
  */
 @Component
+@ConditionalOnProperty(name = "synapse.ai.provider", havingValue = "ollama", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class OllamaClient {

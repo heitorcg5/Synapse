@@ -53,10 +53,10 @@ public class ProcessingService {
             updateJobStep(job.getId(), "ANALYSIS");
             AnalysisResult analysis = saveAnalysis(contentId, cleanedText);
             updateJobStep(job.getId(), "CLASSIFICATION");
-            List<String> tagNames = aiService.classifyTopics(cleanedText);
+            List<String> tagNames = aiService.classify(cleanedText);
             assignTags(contentId, tagNames);
             updateJobStep(job.getId(), "SUMMARY");
-            String summaryText = aiService.generateSummary(cleanedText);
+            String summaryText = aiService.summarize(cleanedText);
             saveSummary(contentId, summaryText);
             completeJob(job.getId());
             markContentReady(contentId);

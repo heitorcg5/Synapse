@@ -30,6 +30,7 @@ synapse:
     secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-must-be-at-least-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   ai:
+    provider: ${AI_PROVIDER:ollama}
     ollama-url: ${OLLAMA_URL:http://localhost:11434}
     model: ${OLLAMA_MODEL:llama3}
     chunk-size-chars: ${AI_CHUNK_SIZE:6000}

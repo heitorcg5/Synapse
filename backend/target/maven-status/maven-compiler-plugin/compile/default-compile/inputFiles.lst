@@ -15,6 +15,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/service/AiService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/service/SynapseUserDetailsService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/dto/OllamaRequest.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/dto/AiRequest.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/entity/ContentTag.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/WebConfig.java
@@ -22,6 +23,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/service/ContentService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/repository/UserRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/AnalysisResultRepository.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/dto/AiResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/SummaryResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/dto/RegisterRequest.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/entity/AnalysisResult.java
@@ -33,6 +35,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/service/UserService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/SecurityConfig.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/auth/controller/AuthController.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/provider/OllamaProvider.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/repository/TagRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/auth/service/AuthService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/auth/dto/LoginRequest.java
@@ -40,4 +43,5 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/dto/UserResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/RestTemplateConfig.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/ContentResponse.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/provider/ExternalApiProvider.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/exceptions/ErrorResponse.java
