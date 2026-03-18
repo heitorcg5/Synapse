@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
 import { authApi } from '../api/auth-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { LanguageToggle } from '@/shared/components/LanguageToggle'
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -30,8 +33,11 @@ export function RegisterPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Create account</h1>
-        <p style={styles.subtitle}>Synapse - AI Content Analyzer</p>
+        <div style={styles.langRow}>
+          <LanguageToggle />
+        </div>
+        <h1 style={styles.title}>{t('auth.createAccount')}</h1>
+        <p style={styles.subtitle}>{t('auth.synapse')} - {t('auth.subtitle')}</p>
         <form onSubmit={handleSubmit} style={styles.form}>
           {error && (
             <div style={styles.error} role="alert">
@@ -39,7 +45,7 @@ export function RegisterPage() {
             </div>
           )}
           <label style={styles.label}>
-            Email
+            {t('auth.email')}
             <input
               type="email"
               value={email}
@@ -50,7 +56,7 @@ export function RegisterPage() {
             />
           </label>
           <label style={styles.label}>
-            Password (min 8 characters)
+            {t('auth.passwordMin')}
             <input
               type="password"
               value={password}
@@ -62,11 +68,11 @@ export function RegisterPage() {
             />
           </label>
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? t('auth.creatingAccount') : t('auth.register')}
           </button>
         </form>
         <p style={styles.footer}>
-          Already have an account? <Link to="/login">Sign in</Link>
+          {t('auth.hasAccount')} <Link to="/login">{t('auth.signInLink')}</Link>
         </p>
       </div>
     </div>
@@ -89,6 +95,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     border: '1px solid var(--border)',
   },
+  langRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' },
   title: {
     fontSize: '1.5rem',
     fontWeight: 700,

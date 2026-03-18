@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
 import { authApi } from '../api/auth-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { LanguageToggle } from '@/shared/components/LanguageToggle'
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -30,8 +33,11 @@ export function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Synapse</h1>
-        <p style={styles.subtitle}>AI Content Analyzer</p>
+        <div style={styles.langRow}>
+          <LanguageToggle />
+        </div>
+        <h1 style={styles.title}>{t('auth.synapse')}</h1>
+        <p style={styles.subtitle}>{t('auth.subtitle')}</p>
         <form onSubmit={handleSubmit} style={styles.form}>
           {error && (
             <div style={styles.error} role="alert">
@@ -39,7 +45,7 @@ export function LoginPage() {
             </div>
           )}
           <label style={styles.label}>
-            Email
+            {t('auth.email')}
             <input
               type="email"
               value={email}
@@ -50,7 +56,7 @@ export function LoginPage() {
             />
           </label>
           <label style={styles.label}>
-            Password
+            {t('auth.password')}
             <input
               type="password"
               value={password}
@@ -61,11 +67,11 @@ export function LoginPage() {
             />
           </label>
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
         <p style={styles.footer}>
-          Don&apos;t have an account? <Link to="/register">Register</Link>
+          {t('auth.noAccount')} <Link to="/register">{t('auth.registerLink')}</Link>
         </p>
       </div>
     </div>
@@ -88,6 +94,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     border: '1px solid var(--border)',
   },
+  langRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' },
   title: {
     fontSize: '1.5rem',
     fontWeight: 700,

@@ -42,3 +42,43 @@ button {
 input, textarea {
   font-family: inherit;
 }
+
+/* Language toggle: hover y foco */
+.language-toggle__option:hover:not([aria-pressed="true"]) {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--text);
+}
+.language-toggle__option[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.language-toggle__option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Botón Logout: solo tonos del tema, sin blanco */
+.header-logout {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.header-logout:hover,
+.header-logout:active,
+.header-logout:focus {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: var(--accent-hover);
+}
+.header-logout:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.header-logout:focus:not(:focus-visible) {
+  outline: none;
+}

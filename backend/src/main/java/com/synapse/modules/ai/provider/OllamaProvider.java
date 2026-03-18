@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OllamaProvider implements AiService {
 
-    private static final String SUMMARY_SYSTEM = "You are a concise summarizer. Reply only with the summary, no preamble.";
-    private static final String CLASSIFICATION_SYSTEM = "You are a content classifier. Reply only with a JSON array of 3 to 5 topic names, e.g. [\"topic1\", \"topic2\"].";
+    private static final String SUMMARY_SYSTEM_TEMPLATE =
+            "You are a concise summarizer. Reply only with the summary, no preamble. Reply in %s.";
+    private static final String CLASSIFICATION_SYSTEM_TEMPLATE =
+            "You are a content classifier. Reply only with a JSON array of 3 to 5 topic names. Reply in %s.";
     private static final int MIN_CHUNK = 500;
 
     private final OllamaClient ollamaClient;
@@ -42,19 +44,20 @@ public class OllamaProvider implements AiService {
     private int chunkSizeChars;
 
     @Override
-    public String summarize(String text) {
+    public String summarize(String text, String language) {
         if (text == null || text.isBlank()) {
             return "";
         }
+        String lang = language != null && !language.isBlank() ? language : "en";
         String cleaned = cleanText(text);
         try {
             if (cleaned.length() <= chunkSizeChars) {
-                return summarizeChunk(cleaned);
+                return summarizeChunk(cleaned, lang);
             }
             List<String> chunks = chunkText(cleaned, chunkSizeChars);
             List<String> chunkSummaries = new ArrayList<>();
             for (String chunk : chunks) {
-                String summary = summarizeChunk(chunk);
+                String summary = summarizeChunk(chunk, lang);
                 if (!summary.isBlank()) {
                     chunkSummaries.add(summary);
                 }
@@ -66,35 +69,39 @@ public class OllamaProvider implements AiService {
                 return chunkSummaries.get(0);
             }
             String merged = String.join("\n\n", chunkSummaries);
-            return summarizeChunk(merged);
+            return summarizeChunk(merged, lang);
         } catch (OllamaException e) {
-            log.warn("Ollama summary failed, using fallback: {}", e.getMessage());
-            return fallbackSummary(cleaned);
+            log.warn("LANG_DEBUG Ollama summary failed, using fallback. lang={}: {}", lang, e.getMessage());
+            return fallbackSummary(cleaned, lang);
         }
     }
 
     @Override
-    public List<String> classify(String text) {
+    public List<String> classify(String text, String language) {
         if (text == null || text.isBlank()) {
             return List.of();
         }
+        String lang = language != null && !language.isBlank() ? language : "en";
         String cleaned = cleanText(text);
         if (cleaned.length() > chunkSizeChars) {
             cleaned = cleaned.substring(0, chunkSizeChars) + "...";
         }
         try {
-            String prompt = "Classify the following text into 3 to 5 topics.\n\nContent: " + cleaned + "\n\nReturn the result as JSON.";
-            String response = ollamaClient.generate(prompt, CLASSIFICATION_SYSTEM);
+            String prompt = String.format(
+                "Classify the following text into 3 to 5 topics. Reply in %s.\n\nContent: %s\n\nReturn the result as JSON.",
+                langName(lang), cleaned);
+            String systemMessage = String.format(CLASSIFICATION_SYSTEM_TEMPLATE, langName(lang));
+            String response = ollamaClient.generate(prompt, systemMessage);
             return parseTopicsFromResponse(response);
         } catch (OllamaException e) {
-            log.warn("Ollama classification failed, using fallback: {}", e.getMessage());
-            return List.of("uncategorized");
+            log.warn("LANG_DEBUG Ollama classification failed, using fallback. lang={}: {}", lang, e.getMessage());
+            return fallbackTopics(lang);
         }
     }
 
     @Override
-    public List<String> generateTags(String text) {
-        return classify(text);
+    public List<String> generateTags(String text, String language) {
+        return classify(text, language);
     }
 
     @Override
@@ -102,9 +109,19 @@ public class OllamaProvider implements AiService {
         return modelName;
     }
 
-    private String summarizeChunk(String chunk) {
-        String prompt = "Summarize the following content in three concise paragraphs.\n\nContent: " + chunk;
-        return ollamaClient.generate(prompt, SUMMARY_SYSTEM);
+    private String summarizeChunk(String chunk, String language) {
+        String lang = langName(language);
+        String prompt = String.format(
+            "Summarize the following content in %s. Write the summary in three concise paragraphs.\n\nContent:\n%s",
+            lang, chunk);
+        String systemMessage = String.format(SUMMARY_SYSTEM_TEMPLATE, lang);
+        return ollamaClient.generate(prompt, systemMessage);
+    }
+
+    private static String langName(String code) {
+        if (code == null) return "English";
+        if (code.startsWith("es")) return "Spanish";
+        return "English";
     }
 
     private String cleanText(String raw) {
@@ -168,8 +185,16 @@ public class OllamaProvider implements AiService {
                 .collect(Collectors.toList());
     }
 
-    private String fallbackSummary(String text) {
-        if (text.length() <= 500) return "Summary: " + text;
-        return "Summary: " + text.substring(0, 500) + "...";
+    private String fallbackSummary(String text, String language) {
+        String prefix = language != null && language.startsWith("es") ? "Resumen: " : "Summary: ";
+        if (text.length() <= 500) return prefix + text;
+        return prefix + text.substring(0, 500) + "...";
+    }
+
+    private List<String> fallbackTopics(String language) {
+        if (language != null && language.startsWith("es")) {
+            return List.of("sin categoría");
+        }
+        return List.of("uncategorized");
     }
 }

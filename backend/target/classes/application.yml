@@ -1,6 +1,9 @@
 spring:
   application:
     name: synapse-backend
+  messages:
+    basename: messages
+    encoding: UTF-8
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:synapse}
     username: ${POSTGRES_USER:synapse}

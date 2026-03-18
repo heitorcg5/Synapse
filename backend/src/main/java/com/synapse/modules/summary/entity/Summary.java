@@ -27,6 +27,9 @@ public class Summary {
 
     private String model;
 
+    @Column(length = 10)
+    private String language;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

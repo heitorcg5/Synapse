@@ -14,5 +14,6 @@ public class SummaryResponse {
     private UUID contentId;
     private String summaryText;
     private String model;
+    private String language;
     private Instant createdAt;
 }

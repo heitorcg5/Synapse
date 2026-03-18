@@ -1,20 +1,23 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
-
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/upload', label: 'Upload content' },
-]
+import { LanguageToggle } from './LanguageToggle'
 
 export function Layout() {
+  const { t } = useTranslation()
   const { logout } = useAuth()
   const location = useLocation()
+
+  const navItems = [
+    { to: '/dashboard', label: t('dashboard') },
+    { to: '/upload', label: t('upload') },
+  ]
 
   return (
     <div style={styles.wrapper}>
       <header style={styles.header}>
         <Link to="/dashboard" style={styles.logo}>
-          Synapse
+          {t('auth.synapse')}
         </Link>
         <nav style={styles.nav}>
           {navItems.map(({ to, label }) => (
@@ -30,9 +33,12 @@ export function Layout() {
             </Link>
           ))}
         </nav>
-        <button type="button" onClick={logout} style={styles.logout}>
-          Logout
-        </button>
+        <div style={styles.rightActions}>
+          <LanguageToggle />
+          <button type="button" onClick={logout} className="header-logout">
+            {t('nav.logout')}
+          </button>
+        </div>
       </header>
       <main style={styles.main}>
         <Outlet />
@@ -54,6 +60,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1rem 1.5rem',
     backgroundColor: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
+    overflow: 'visible',
   },
   logo: {
     fontSize: '1.25rem',
@@ -64,6 +71,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '0.5rem',
     flex: 1,
+    minWidth: 0,
   },
   navLink: {
     padding: '0.5rem 0.75rem',
@@ -74,12 +82,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent)',
     backgroundColor: 'rgba(99, 102, 241, 0.15)',
   },
-  logout: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    border: '1px solid var(--border)',
-    background: 'transparent',
-    color: 'var(--text-muted)',
+  rightActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    flexShrink: 0,
   },
   main: {
     flex: 1,

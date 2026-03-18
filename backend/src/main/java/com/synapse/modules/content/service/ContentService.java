@@ -35,7 +35,7 @@ public class ContentService {
     private final ProcessingService processingService;
 
     @Transactional
-    public ContentResponse create(UUID userId, CreateContentRequest request) {
+    public ContentResponse create(UUID userId, CreateContentRequest request, String language) {
         Content content = Content.builder()
                 .userId(userId)
                 .type(request.getType())
@@ -43,7 +43,8 @@ public class ContentService {
                 .status(STATUS_PENDING)
                 .build();
         content = contentRepository.save(content);
-        processingService.processContentAsync(content.getId());
+        String lang = language != null && !language.isBlank() ? language : "en";
+        processingService.processContentAsync(content.getId(), lang);
         return toResponse(content);
     }
 
@@ -84,6 +85,7 @@ public class ContentService {
                 .contentId(summary.getContentId())
                 .summaryText(summary.getSummaryText())
                 .model(summary.getModel())
+                .language(summary.getLanguage())
                 .createdAt(summary.getCreatedAt())
                 .build();
     }

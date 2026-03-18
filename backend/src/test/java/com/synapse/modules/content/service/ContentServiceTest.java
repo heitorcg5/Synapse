@@ -57,7 +57,7 @@ class ContentServiceTest {
                 .build();
         when(contentRepository.save(any(Content.class))).thenReturn(saved);
 
-        ContentResponse response = contentService.create(userId, request);
+        ContentResponse response = contentService.create(userId, request, "en");
 
         assertThat(response.getType()).isEqualTo("TEXT");
         assertThat(response.getSourceUrl()).isEqualTo(request.getSourceUrl());
@@ -67,7 +67,7 @@ class ContentServiceTest {
         verify(contentRepository).save(contentCaptor.capture());
         assertThat(contentCaptor.getValue().getUserId()).isEqualTo(userId);
 
-        verify(processingService).processContentAsync(saved.getId());
+        verify(processingService).processContentAsync(saved.getId(), "en");
     }
 
     @Test

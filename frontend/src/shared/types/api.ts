@@ -23,6 +23,7 @@ export interface SummaryResponse {
   contentId: string
   summaryText: string
   model: string
+  language?: string
   createdAt: string
 }
 

@@ -1,16 +1,27 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useContentList } from '../hooks/useContentList'
 
+const STATUS_KEYS: Record<string, string> = {
+  READY: 'statusReady',
+  PENDING: 'statusPending',
+  PROCESSING: 'statusProcessing',
+  FAILED: 'statusFailed',
+}
+
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { data: contents, isLoading, error } = useContentList()
 
+  const translateStatus = (status: string) => t(STATUS_KEYS[status] || status)
+
   if (isLoading) {
-    return <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
+    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
   }
   if (error) {
     return (
       <p style={{ color: 'var(--error)' }}>
-        Failed to load content. Please try again.
+        {t('failedToLoad')}
       </p>
     )
   }
@@ -20,15 +31,15 @@ export function DashboardPage() {
   return (
     <div>
       <div style={styles.header}>
-        <h1 style={styles.title}>Dashboard</h1>
+        <h1 style={styles.title}>{t('dashboard')}</h1>
         <Link to="/upload" style={styles.uploadLink}>
-          Upload content
+          {t('upload')}
         </Link>
       </div>
       {list.length === 0 ? (
         <div style={styles.empty}>
-          <p>No content yet.</p>
-          <Link to="/upload">Upload your first content</Link>
+          <p>{t('noContent')}</p>
+          <Link to="/upload">{t('uploadFirst')}</Link>
         </div>
       ) : (
         <ul style={styles.list}>
@@ -36,7 +47,7 @@ export function DashboardPage() {
             <li key={c.id} style={styles.item}>
               <Link to={`/content/${c.id}`} style={styles.itemLink}>
                 <span style={styles.type}>{c.type}</span>
-                <span style={styles.status}>{c.status}</span>
+                <span style={styles.status}>{translateStatus(c.status)}</span>
                 <span style={styles.date}>
                   {new Date(c.uploadedAt).toLocaleDateString()}
                 </span>

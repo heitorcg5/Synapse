@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import i18n from '@/i18n/config'
 import type { ErrorResponse } from '../types/api'
 
 const baseURL = import.meta.env.VITE_API_URL ?? '/api'
@@ -15,6 +16,8 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  const lang = i18n.language || 'en'
+  config.headers['Accept-Language'] = lang.startsWith('es') ? 'es' : 'en'
   return config
 })
 

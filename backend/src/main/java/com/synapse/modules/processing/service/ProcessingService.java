@@ -1,7 +1,6 @@
 package com.synapse.modules.processing.service;
 
 import com.synapse.modules.ai.service.AiService;
-import com.synapse.modules.content.entity.Content;
 import com.synapse.modules.content.entity.Tag;
 import com.synapse.modules.content.repository.ContentRepository;
 import com.synapse.modules.content.repository.ContentTagRepository;
@@ -34,16 +33,16 @@ public class ProcessingService {
     private final ContentTagRepository contentTagRepository;
     private final AiService aiService;
 
-    private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_FAILED = "FAILED";
-    private static final String CONTENT_STATUS_PROCESSING = "PROCESSING";
     private static final String CONTENT_STATUS_READY = "READY";
 
     @Async
     @Transactional
-    public void processContentAsync(UUID contentId) {
+    public void processContentAsync(UUID contentId, String language) {
+        String lang = language != null && !language.isBlank() ? language : "en";
+        log.warn("LANG_DEBUG Processing contentId={} language={}", contentId, lang);
         ProcessingJob job = createJob(contentId);
         try {
             updateJobStep(job.getId(), "EXTRACTION");
@@ -51,13 +50,13 @@ public class ProcessingService {
             updateJobStep(job.getId(), "CLEANING");
             String cleanedText = cleanText(rawText);
             updateJobStep(job.getId(), "ANALYSIS");
-            AnalysisResult analysis = saveAnalysis(contentId, cleanedText);
+            saveAnalysis(contentId, cleanedText, lang);
             updateJobStep(job.getId(), "CLASSIFICATION");
-            List<String> tagNames = aiService.classify(cleanedText);
+            List<String> tagNames = aiService.classify(cleanedText, lang);
             assignTags(contentId, tagNames);
             updateJobStep(job.getId(), "SUMMARY");
-            String summaryText = aiService.summarize(cleanedText);
-            saveSummary(contentId, summaryText);
+            String summaryText = aiService.summarize(cleanedText, lang);
+            saveSummary(contentId, summaryText, lang);
             completeJob(job.getId());
             markContentReady(contentId);
         } catch (Exception e) {
@@ -107,11 +106,12 @@ public class ProcessingService {
         return raw.trim().replaceAll("\\s+", " ");
     }
 
-    private AnalysisResult saveAnalysis(UUID contentId, String cleanedText) {
+    private AnalysisResult saveAnalysis(UUID contentId, String cleanedText, String language) {
+        String lang = language != null && !language.isBlank() ? language : "en";
         AnalysisResult ar = AnalysisResult.builder()
                 .contentId(contentId)
                 .rawText(cleanedText)
-                .language("en")
+                .language(lang)
                 .build();
         return analysisResultRepository.save(ar);
     }
@@ -128,11 +128,12 @@ public class ProcessingService {
         }
     }
 
-    private void saveSummary(UUID contentId, String summaryText) {
+    private void saveSummary(UUID contentId, String summaryText, String language) {
         summaryRepository.save(Summary.builder()
                 .contentId(contentId)
                 .summaryText(summaryText)
                 .model(aiService.getModelName())
+                .language(language != null ? language : "en")
                 .build());
     }
 

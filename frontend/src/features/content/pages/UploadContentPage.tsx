@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { contentApi } from '../api/content-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
@@ -14,6 +15,7 @@ const TYPES: CreateContentRequest['type'][] = [
 ]
 
 export function UploadContentPage() {
+  const { t } = useTranslation()
   const [type, setType] = useState<CreateContentRequest['type']>('TEXT')
   const [sourceUrl, setSourceUrl] = useState('')
   const [error, setError] = useState('')
@@ -41,7 +43,7 @@ export function UploadContentPage() {
 
   return (
     <div>
-      <h1 style={styles.title}>Upload content</h1>
+      <h1 style={styles.title}>{t('upload')}</h1>
       <form onSubmit={handleSubmit} style={styles.form}>
         {error && (
           <div style={styles.error} role="alert">
@@ -49,35 +51,35 @@ export function UploadContentPage() {
           </div>
         )}
         <label style={styles.label}>
-          Type
+          {t('type')}
           <select
             value={type}
             onChange={(e) => setType(e.target.value as CreateContentRequest['type'])}
             style={styles.select}
           >
-            {TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {TYPES.map((typeOpt) => (
+              <option key={typeOpt} value={typeOpt}>
+                {typeOpt}
               </option>
             ))}
           </select>
         </label>
         <label style={styles.label}>
-          Source URL (optional)
+          {t('sourceUrl')}
           <input
             type="url"
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="https://..."
+            placeholder={t('sourceUrlPlaceholder')}
             style={styles.input}
           />
         </label>
         <button
           type="submit"
-          disabled={createMutation.isLoading}
+          disabled={createMutation.isPending}
           style={styles.button}
         >
-          {createMutation.isLoading ? 'Creating...' : 'Create content'}
+          {createMutation.isPending ? t('creating') : t('createContent')}
         </button>
       </form>
     </div>

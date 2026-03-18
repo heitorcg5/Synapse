@@ -17,20 +17,20 @@ import java.util.List;
 public class ExternalApiProvider implements AiService {
 
     @Override
-    public String summarize(String text) {
+    public String summarize(String text, String language) {
         log.warn("ExternalApiProvider not implemented; returning placeholder.");
         return "Summary not available (external provider not configured).";
     }
 
     @Override
-    public List<String> classify(String text) {
+    public List<String> classify(String text, String language) {
         log.warn("ExternalApiProvider not implemented; returning placeholder.");
         return List.of("uncategorized");
     }
 
     @Override
-    public List<String> generateTags(String text) {
-        return classify(text);
+    public List<String> generateTags(String text, String language) {
+        return classify(text, language);
     }
 
     @Override

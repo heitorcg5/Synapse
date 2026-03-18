@@ -54,6 +54,7 @@ com/synapse/modules/content/entity/ContentTag$ContentTagId.class
 com/synapse/modules/auth/controller/AuthController.class
 com/synapse/modules/summary/entity/Summary$SummaryBuilder.class
 com/synapse/modules/summary/repository/SummaryRepository.class
+com/synapse/config/LocaleConfig.class
 com/synapse/modules/processing/entity/ProcessingJob$ProcessingJobBuilder.class
 com/synapse/modules/ai/dto/OllamaResponse.class
 com/synapse/security/JwtAuthenticationFilter.class

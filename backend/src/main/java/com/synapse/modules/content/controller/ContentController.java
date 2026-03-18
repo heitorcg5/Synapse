@@ -9,6 +9,7 @@ import com.synapse.modules.user.entity.User;
 import com.synapse.modules.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,11 +17,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/content")
 @RequiredArgsConstructor
+@Slf4j
 public class ContentController {
 
     private final ContentService contentService;
@@ -29,12 +32,24 @@ public class ContentController {
     @PostMapping
     public ResponseEntity<ContentResponse> create(
             @Valid @RequestBody CreateContentRequest request,
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
     ) {
         UUID userId = userRepository.findByEmail(userDetails.getUsername())
                 .map(User::getId)
                 .orElseThrow();
-        return ResponseEntity.status(HttpStatus.CREATED).body(contentService.create(userId, request));
+        String language = parseLanguage(acceptLanguage);
+        log.warn("LANG_DEBUG POST /content Accept-Language='{}' -> language='{}'", acceptLanguage, language);
+        return ResponseEntity.status(HttpStatus.CREATED).body(contentService.create(userId, request, language));
+    }
+
+    private static String parseLanguage(String acceptLanguage) {
+        if (acceptLanguage == null || acceptLanguage.isBlank()) {
+            return "en";
+        }
+        String first = acceptLanguage.split(",")[0].trim().toLowerCase(Locale.ROOT);
+        if (first.startsWith("es")) return "es";
+        return "en";
     }
 
     @GetMapping("/{id}")

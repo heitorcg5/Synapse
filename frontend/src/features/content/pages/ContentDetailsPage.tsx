@@ -1,10 +1,20 @@
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useContent } from '../hooks/useContent'
 import { useQuery } from '@tanstack/react-query'
 import { contentApi } from '../api/content-api'
 
+const STATUS_KEYS: Record<string, string> = {
+  READY: 'statusReady',
+  PENDING: 'statusPending',
+  PROCESSING: 'statusProcessing',
+  FAILED: 'statusFailed',
+}
+
 export function ContentDetailsPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
+  const translateStatus = (status: string) => t(STATUS_KEYS[status] || status)
   const { data: content, isLoading, error } = useContent(id)
   const { data: tags = [] } = useQuery({
     queryKey: ['content-tags', id],
@@ -13,12 +23,12 @@ export function ContentDetailsPage() {
   })
 
   if (isLoading || !id) {
-    return <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
+    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
   }
   if (error || !content) {
     return (
       <p style={{ color: 'var(--error)' }}>
-        Content not found or failed to load.
+        {t('contentNotFoundOrFailed')}
       </p>
     )
   }
@@ -27,17 +37,17 @@ export function ContentDetailsPage() {
     <div>
       <div style={styles.header}>
         <Link to="/dashboard" style={styles.back}>
-          ← Dashboard
+          ← {t('backToDashboard')}
         </Link>
       </div>
       <div style={styles.card}>
-        <h1 style={styles.title}>Content details</h1>
+        <h1 style={styles.title}>{t('contentDetails')}</h1>
         <dl style={styles.dl}>
           <dt style={styles.dt}>ID</dt>
           <dd style={styles.dd}>{content.id}</dd>
-          <dt style={styles.dt}>Type</dt>
+          <dt style={styles.dt}>{t('type')}</dt>
           <dd style={styles.dd}>{content.type}</dd>
-          <dt style={styles.dt}>Status</dt>
+          <dt style={styles.dt}>{t('status')}</dt>
           <dd style={styles.dd}>
             <span
               style={{
@@ -47,16 +57,16 @@ export function ContentDetailsPage() {
                   : {}),
               }}
             >
-              {content.status}
+              {translateStatus(content.status)}
             </span>
           </dd>
-          <dt style={styles.dt}>Uploaded</dt>
+          <dt style={styles.dt}>{t('uploaded')}</dt>
           <dd style={styles.dd}>
             {new Date(content.uploadedAt).toLocaleString()}
           </dd>
           {content.sourceUrl && (
             <>
-              <dt style={styles.dt}>Source URL</dt>
+              <dt style={styles.dt}>{t('sourceUrl')}</dt>
               <dd style={styles.dd}>
                 <a
                   href={content.sourceUrl}
@@ -71,7 +81,7 @@ export function ContentDetailsPage() {
         </dl>
         {tags.length > 0 && (
           <div style={styles.tags}>
-            <strong>Tags:</strong>{' '}
+            <strong>{t('tags')}:</strong>{' '}
             {tags.map((t) => (
               <span key={t.id} style={styles.tag}>
                 {t.name}
@@ -84,7 +94,7 @@ export function ContentDetailsPage() {
             to={`/content/${content.id}/summary`}
             style={styles.summaryLink}
           >
-            View summary
+            {t('viewSummary')}
           </Link>
         </div>
       </div>

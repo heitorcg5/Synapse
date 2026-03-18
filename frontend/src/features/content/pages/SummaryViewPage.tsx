@@ -1,8 +1,10 @@
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useContent } from '../hooks/useContent'
 import { useContentSummary } from '../hooks/useContentSummary'
 
 export function SummaryViewPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const { data: content, isLoading: contentLoading } = useContent(id)
   const { data: summary, isLoading: summaryLoading, error } = useContentSummary(id)
@@ -10,12 +12,12 @@ export function SummaryViewPage() {
   const isLoading = contentLoading || summaryLoading
 
   if (isLoading || !id) {
-    return <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
+    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
   }
   if (!content) {
     return (
       <p style={{ color: 'var(--error)' }}>
-        Content not found.
+        {t('contentNotFound')}
       </p>
     )
   }
@@ -26,21 +28,21 @@ export function SummaryViewPage() {
     <div>
       <div style={styles.header}>
         <Link to={`/content/${id}`} style={styles.back}>
-          ← Back to content
+          ← {t('backToContent')}
         </Link>
       </div>
       <div style={styles.card}>
-        <h1 style={styles.title}>Summary</h1>
+        <h1 style={styles.title}>{t('summary')}</h1>
         <p style={styles.meta}>
           {content.type} · {new Date(content.uploadedAt).toLocaleDateString()}
         </p>
         <div style={styles.summary}>
           {summaryPending
-            ? 'No summary available yet. Processing may still be in progress.'
+            ? t('noSummaryYet')
             : summary.summaryText}
         </div>
         {summary?.model && (
-          <p style={styles.model}>Generated with: {summary.model}</p>
+          <p style={styles.model}>{t('generatedWith')}: {summary.model}</p>
         )}
       </div>
     </div>
