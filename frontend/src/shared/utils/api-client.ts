@@ -2,7 +2,14 @@ import axios, { AxiosError, type AxiosResponseHeaders, type RawAxiosResponseHead
 import i18n from '@/i18n/config'
 import type { ErrorResponse } from '../types/api'
 
-const baseURL = import.meta.env.VITE_API_URL ?? '/api'
+const defaultApiUrl = (() => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8080/api'
+  }
+  return `${window.location.protocol}//${window.location.hostname}:8080/api`
+})()
+
+const baseURL = import.meta.env.VITE_API_URL ?? defaultApiUrl
 
 export const apiClient = axios.create({
   baseURL,
@@ -14,7 +21,12 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('synapse_token')
-  if (token) {
+  const rawUrl = String(config.url ?? '')
+  const isAuthEndpoint =
+    rawUrl.includes('/auth/login') ||
+    rawUrl.includes('/auth/register') ||
+    rawUrl.includes('/auth/refresh')
+  if (token && !isAuthEndpoint) {
     config.headers.Authorization = `Bearer ${token}`
   }
   const lang = i18n.language || 'en'
