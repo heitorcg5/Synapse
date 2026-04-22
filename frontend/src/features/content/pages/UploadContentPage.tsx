@@ -18,6 +18,7 @@ export function UploadContentPage() {
   const { t } = useTranslation()
   const [type, setType] = useState<CreateContentRequest['type']>('TEXT')
   const [sourceUrl, setSourceUrl] = useState('')
+  const [rawContent, setRawContent] = useState('')
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -25,9 +26,10 @@ export function UploadContentPage() {
   const createMutation = useMutation({
     mutationFn: (data: CreateContentRequest) =>
       contentApi.create(data).then((res) => res.data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-list'] })
-      navigate(`/content/${data.id}`)
+      queryClient.invalidateQueries({ queryKey: ['inbox-list'] })
+      navigate('/inbox')
     },
     onError: (err) => setError(getErrorMessage(err)),
   })
@@ -38,12 +40,14 @@ export function UploadContentPage() {
     createMutation.mutate({
       type,
       ...(sourceUrl.trim() ? { sourceUrl: sourceUrl.trim() } : {}),
+      ...(rawContent.trim() ? { rawContent: rawContent.trim() } : {}),
     })
   }
 
   return (
     <div>
-      <h1 style={styles.title}>{t('upload')}</h1>
+      <h1 style={styles.title}>{t('capture')}</h1>
+      <p style={styles.hint}>{t('captureHint')}</p>
       <form onSubmit={handleSubmit} style={styles.form}>
         {error && (
           <div style={styles.error} role="alert">
@@ -74,12 +78,22 @@ export function UploadContentPage() {
             style={styles.input}
           />
         </label>
+        <label style={styles.label}>
+          {t('rawContentOptional')}
+          <textarea
+            value={rawContent}
+            onChange={(e) => setRawContent(e.target.value)}
+            placeholder={t('rawContentPlaceholder')}
+            style={styles.textarea}
+            rows={6}
+          />
+        </label>
         <button
           type="submit"
           disabled={createMutation.isPending}
           style={styles.button}
         >
-          {createMutation.isPending ? t('creating') : t('createContent')}
+          {createMutation.isPending ? t('creating') : t('saveToInbox')}
         </button>
       </form>
     </div>
@@ -92,8 +106,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     marginBottom: '1.5rem',
   },
+  hint: {
+    color: 'var(--text-muted)',
+    fontSize: '0.875rem',
+    marginBottom: '1rem',
+    maxWidth: 480,
+    lineHeight: 1.5,
+  },
   form: {
-    maxWidth: '400px',
+    maxWidth: '480px',
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
@@ -125,6 +146,15 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     backgroundColor: 'var(--bg)',
     color: 'var(--text)',
+  },
+  textarea: {
+    padding: '0.75rem',
+    borderRadius: '6px',
+    border: '1px solid var(--border)',
+    backgroundColor: 'var(--bg)',
+    color: 'var(--text)',
+    resize: 'vertical',
+    fontFamily: 'inherit',
   },
   button: {
     padding: '0.75rem',

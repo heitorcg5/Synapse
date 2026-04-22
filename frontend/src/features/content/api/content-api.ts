@@ -4,6 +4,8 @@ import type {
   SummaryResponse,
   TagResponse,
   CreateContentRequest,
+  AiPreviewResponse,
+  ConfirmContentRequest,
 } from '@/shared/types/api'
 
 export const contentApi = {
@@ -23,4 +25,14 @@ export const contentApi = {
 
   getTags: (contentId: string) =>
     apiClient.get<TagResponse[]>(`/content/${contentId}/tags`),
+
+  aiPreview: (contentId: string) =>
+    apiClient.post<AiPreviewResponse>(`/content/${contentId}/ai-preview`, {}),
+
+  confirmContent: (contentId: string, payload: ConfirmContentRequest) =>
+    apiClient.post<ContentResponse>(`/content/${contentId}/confirm`, payload),
+
+  /** Run full AI pipeline on a pending capture (202 Accepted). */
+  runProcessingPipeline: (contentId: string) =>
+    apiClient.post<void>(`/content/${contentId}/process`, {}),
 }

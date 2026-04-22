@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,6 +18,7 @@ public class OllamaRequest {
     private String prompt;
     private Boolean stream;
     private String system;
+    private Map<String, Object> options;
 
     @JsonProperty("stream")
     public Boolean getStream() {

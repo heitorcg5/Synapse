@@ -12,4 +12,6 @@ import org.springframework.stereotype.Repository;
 public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, UUID> {
 
     Optional<AnalysisResult> findByContentId(UUID contentId);
+
+    void deleteByContentId(UUID contentId);
 }

@@ -14,6 +14,10 @@ public class ContentResponse {
     private UUID userId;
     private String type;
     private String sourceUrl;
+    private String rawContent;
+    private String language;
+    private String title;
+    private Boolean notificationsEnabled;
     private String status;
     private Instant uploadedAt;
 }

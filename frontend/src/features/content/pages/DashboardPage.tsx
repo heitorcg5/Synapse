@@ -1,117 +1,82 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useContentList } from '../hooks/useContentList'
 
-const STATUS_KEYS: Record<string, string> = {
-  READY: 'statusReady',
-  PENDING: 'statusPending',
-  PROCESSING: 'statusProcessing',
-  FAILED: 'statusFailed',
-}
-
+/**
+ * Digital Brain hub: quick navigation between inbox, knowledge, and capture.
+ */
 export function DashboardPage() {
   const { t } = useTranslation()
-  const { data: contents, isLoading, error } = useContentList()
 
-  const translateStatus = (status: string) => t(STATUS_KEYS[status] || status)
-
-  if (isLoading) {
-    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
-  }
-  if (error) {
-    return (
-      <p style={{ color: 'var(--error)' }}>
-        {t('failedToLoad')}
-      </p>
-    )
-  }
-
-  const list = contents ?? []
+  const cards = [
+    {
+      to: '/inbox',
+      title: t('nav.inbox'),
+      desc: t('hubInboxDesc'),
+    },
+    {
+      to: '/knowledge',
+      title: t('nav.knowledge'),
+      desc: t('hubKnowledgeDesc'),
+    },
+    {
+      to: '/upload',
+      title: t('capture'),
+      desc: t('hubCaptureDesc'),
+    },
+  ]
 
   return (
     <div>
-      <div style={styles.header}>
-        <h1 style={styles.title}>{t('dashboard')}</h1>
-        <Link to="/upload" style={styles.uploadLink}>
-          {t('upload')}
-        </Link>
+      <h1 style={styles.title}>{t('digitalBrainHub')}</h1>
+      <p style={styles.subtitle}>{t('digitalBrainHubSubtitle')}</p>
+      <div style={styles.grid}>
+        {cards.map(({ to, title, desc }) => (
+          <Link key={to} to={to} style={styles.card}>
+            <span style={styles.cardTitle}>{title}</span>
+            <span style={styles.cardDesc}>{desc}</span>
+          </Link>
+        ))}
       </div>
-      {list.length === 0 ? (
-        <div style={styles.empty}>
-          <p>{t('noContent')}</p>
-          <Link to="/upload">{t('uploadFirst')}</Link>
-        </div>
-      ) : (
-        <ul style={styles.list}>
-          {list.map((c) => (
-            <li key={c.id} style={styles.item}>
-              <Link to={`/content/${c.id}`} style={styles.itemLink}>
-                <span style={styles.type}>{c.type}</span>
-                <span style={styles.status}>{translateStatus(c.status)}</span>
-                <span style={styles.date}>
-                  {new Date(c.uploadedAt).toLocaleDateString()}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.5rem',
-  },
   title: {
     fontSize: '1.5rem',
-    fontWeight: 600,
+    fontWeight: 700,
+    marginBottom: '0.5rem',
   },
-  uploadLink: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 500,
-  },
-  empty: {
-    padding: '2rem',
-    textAlign: 'center',
+  subtitle: {
     color: 'var(--text-muted)',
+    marginBottom: '1.5rem',
+    maxWidth: 520,
+    lineHeight: 1.5,
   },
-  list: {
-    listStyle: 'none',
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '1rem',
+  },
+  card: {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
-  },
-  item: {
+    padding: '1.25rem',
+    borderRadius: 12,
     border: '1px solid var(--border)',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  },
-  itemLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    padding: '1rem',
+    backgroundColor: 'var(--surface)',
     color: 'inherit',
+    textDecoration: 'none',
+    transition: 'border-color 0.15s ease',
   },
-  type: {
-    fontWeight: 500,
-    minWidth: '80px',
+  cardTitle: {
+    fontWeight: 600,
+    color: 'var(--accent)',
   },
-  status: {
+  cardDesc: {
     fontSize: '0.875rem',
     color: 'var(--text-muted)',
-  },
-  date: {
-    marginLeft: 'auto',
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
+    lineHeight: 1.4,
   },
 }

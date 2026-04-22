@@ -20,6 +20,7 @@ export function ContentDetailsPage() {
     queryKey: ['content-tags', id],
     queryFn: () => contentApi.getTags(id!).then((res) => res.data),
     enabled: !!id,
+    refetchInterval: 5_000,
   })
 
   if (isLoading || !id) {
@@ -36,8 +37,8 @@ export function ContentDetailsPage() {
   return (
     <div>
       <div style={styles.header}>
-        <Link to="/dashboard" style={styles.back}>
-          ← {t('backToDashboard')}
+        <Link to="/inbox" style={styles.back}>
+          ← {t('backToInbox')}
         </Link>
       </div>
       <div style={styles.card}>
@@ -47,6 +48,8 @@ export function ContentDetailsPage() {
           <dd style={styles.dd}>{content.id}</dd>
           <dt style={styles.dt}>{t('type')}</dt>
           <dd style={styles.dd}>{content.type}</dd>
+          <dt style={styles.dt}>{t('title')}</dt>
+          <dd style={styles.dd}>{content.title || '—'}</dd>
           <dt style={styles.dt}>{t('status')}</dt>
           <dd style={styles.dd}>
             <span

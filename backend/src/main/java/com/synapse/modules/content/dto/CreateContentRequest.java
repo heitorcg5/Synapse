@@ -12,4 +12,7 @@ public class CreateContentRequest {
     private String type;
 
     private String sourceUrl;
+
+    /** Optional pasted text for frictionless inbox capture (TEXT type recommended). */
+    private String rawContent;
 }

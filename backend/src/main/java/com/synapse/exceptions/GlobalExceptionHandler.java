@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.dao.DataAccessException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
@@ -70,6 +71,19 @@ public class GlobalExceptionHandler {
             }
         }
         return Locale.ENGLISH;
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleDataAccess(DataAccessException ex) {
+        Throwable cause = ex.getMostSpecificCause();
+        String message = cause.getMessage() != null ? cause.getMessage() : ex.getMessage();
+        log.error("Database error: {}", message, ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.builder()
+                        .error("DATABASE_ERROR")
+                        .message(message != null ? message : "Database error")
+                        .build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
 import { authApi } from '../api/auth-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
-import { LanguageToggle } from '@/shared/components/LanguageToggle'
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -22,7 +21,7 @@ export function LoginPage() {
     try {
       const { data } = await authApi.login({ email, password })
       setToken(data.accessToken)
-      navigate('/dashboard', { replace: true })
+      navigate('/inbox', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -33,9 +32,6 @@ export function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <div style={styles.langRow}>
-          <LanguageToggle />
-        </div>
         <h1 style={styles.title}>{t('auth.synapse')}</h1>
         <p style={styles.subtitle}>{t('auth.subtitle')}</p>
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -94,7 +90,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     border: '1px solid var(--border)',
   },
-  langRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' },
   title: {
     fontSize: '1.5rem',
     fontWeight: 700,

@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, type AxiosResponseHeaders, type RawAxiosResponseHeaders } from 'axios'
 import i18n from '@/i18n/config'
 import type { ErrorResponse } from '../types/api'
 
@@ -6,6 +6,7 @@ const baseURL = import.meta.env.VITE_API_URL ?? '/api'
 
 export const apiClient = axios.create({
   baseURL,
+  timeout: 60000, // 60s for AI-heavy endpoints
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,6 +19,9 @@ apiClient.interceptors.request.use((config) => {
   }
   const lang = i18n.language || 'en'
   config.headers['Accept-Language'] = lang.startsWith('es') ? 'es' : 'en'
+  if (config.data instanceof FormData) {
+    config.headers.delete('Content-Type')
+  }
   return config
 })
 
@@ -37,4 +41,22 @@ export function getErrorMessage(error: unknown): string {
     return error.response.data.message
   }
   return error instanceof Error ? error.message : 'An error occurred'
+}
+
+/** Best-effort filename from {@code Content-Disposition} (RFC 5987 / quoted). */
+export function parseContentDispositionFilename(
+  headers: RawAxiosResponseHeaders | AxiosResponseHeaders,
+): string | null {
+  const cd = headers['content-disposition']
+  if (typeof cd !== 'string') return null
+  const star = /filename\*=UTF-8''([^;\s]+)/i.exec(cd)
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1].replace(/"/g, ''))
+    } catch {
+      return star[1]
+    }
+  }
+  const plain = /filename="([^"]+)"/i.exec(cd)
+  return plain?.[1]?.trim() ?? null
 }

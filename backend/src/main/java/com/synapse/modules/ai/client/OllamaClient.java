@@ -3,6 +3,8 @@ package com.synapse.modules.ai.client;
 import com.synapse.modules.ai.dto.OllamaRequest;
 import com.synapse.modules.ai.dto.OllamaResponse;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -44,12 +46,20 @@ public class OllamaClient {
      * Send a prompt with optional system message.
      */
     public String generate(String prompt, String systemMessage) {
+        return generate(prompt, systemMessage, null);
+    }
+
+    /**
+     * Send a prompt with optional system message and options (e.g. num_predict for shorter/faster output).
+     */
+    public String generate(String prompt, String systemMessage, Map<String, Object> options) {
         String url = baseUrl.endsWith("/") ? baseUrl + GENERATE_PATH.substring(1) : baseUrl + GENERATE_PATH;
         OllamaRequest request = OllamaRequest.builder()
                 .model(model)
                 .prompt(prompt)
                 .stream(false)
                 .system(systemMessage)
+                .options(options)
                 .build();
 
         HttpHeaders headers = new HttpHeaders();

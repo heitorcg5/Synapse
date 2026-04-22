@@ -12,4 +12,6 @@ import org.springframework.stereotype.Repository;
 public interface SummaryRepository extends JpaRepository<Summary, UUID> {
 
     Optional<Summary> findByContentId(UUID contentId);
+
+    void deleteByContentId(UUID contentId);
 }

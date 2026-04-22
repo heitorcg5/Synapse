@@ -1,6 +1,10 @@
 spring:
   application:
     name: synapse-backend
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
   messages:
     basename: messages
     encoding: UTF-8

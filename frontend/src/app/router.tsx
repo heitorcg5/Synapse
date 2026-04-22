@@ -7,6 +7,12 @@ import { DashboardPage } from '@/features/content/pages/DashboardPage'
 import { UploadContentPage } from '@/features/content/pages/UploadContentPage'
 import { ContentDetailsPage } from '@/features/content/pages/ContentDetailsPage'
 import { SummaryViewPage } from '@/features/content/pages/SummaryViewPage'
+import { InboxPage } from '@/features/brain/pages/InboxPage'
+import { KnowledgePage } from '@/features/brain/pages/KnowledgePage'
+import { KnowledgeDetailPage } from '@/features/brain/pages/KnowledgeDetailPage'
+import { ProfilePage } from '@/features/profile/pages/ProfilePage'
+import { PreferencesPage } from '@/features/profile/pages/PreferencesPage'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -21,11 +27,11 @@ export function AppRouter() {
   const routes = useRoutes([
     {
       path: '/login',
-      element: isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />,
+      element: isAuthenticated ? <Navigate to="/inbox" replace /> : <LoginPage />,
     },
     {
       path: '/register',
-      element: isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />,
+      element: isAuthenticated ? <Navigate to="/inbox" replace /> : <RegisterPage />,
     },
     {
       path: '/',
@@ -35,8 +41,16 @@ export function AppRouter() {
         </ProtectedRoute>
       ),
       children: [
-        { index: true, element: <Navigate to="/dashboard" replace /> },
+        { index: true, element: <Navigate to="/inbox" replace /> },
         { path: 'dashboard', element: <DashboardPage /> },
+        { path: 'inbox', element: <InboxPage /> },
+        { path: 'knowledge', element: <KnowledgePage /> },
+        { path: 'knowledge/:id', element: <KnowledgeDetailPage /> },
+        { path: 'profile', element: <ProfilePage /> },
+        { path: 'preferences', element: <PreferencesPage /> },
+        { path: 'settings', element: <SettingsPage /> },
+        { path: 'settings/ai', element: <Navigate to="/settings" replace /> },
+        { path: 'settings/knowledge', element: <Navigate to="/settings" replace /> },
         { path: 'upload', element: <UploadContentPage /> },
         { path: 'content/:id', element: <ContentDetailsPage /> },
         { path: 'content/:id/summary', element: <SummaryViewPage /> },

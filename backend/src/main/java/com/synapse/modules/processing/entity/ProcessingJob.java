@@ -22,6 +22,12 @@ public class ProcessingJob {
     @Column(name = "content_id", nullable = false)
     private UUID contentId;
 
+    /**
+     * Same as {@link #contentId} in Digital Brain model (inbox item id).
+     */
+    @Column(name = "inbox_item_id")
+    private UUID inboxItemId;
+
     @Column(nullable = false)
     private String status;
 

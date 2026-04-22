@@ -1,22 +1,25 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@/app/auth-context'
-import { LanguageToggle } from './LanguageToggle'
+import { ProfileLanguageSync } from '@/features/profile/components/ProfileLanguageSync'
+import { ThemeSync } from '@/features/profile/components/ThemeSync'
+import { HeaderNotificationsBell } from '@/features/notifications/components/HeaderNotificationsBell'
+import { HeaderProfileAvatar } from '@/features/profile/components/HeaderProfileAvatar'
 
 export function Layout() {
   const { t } = useTranslation()
-  const { logout } = useAuth()
   const location = useLocation()
 
   const navItems = [
     { to: '/dashboard', label: t('dashboard') },
-    { to: '/upload', label: t('upload') },
+    { to: '/inbox', label: t('nav.inbox') },
+    { to: '/knowledge', label: t('nav.knowledge') },
+    { to: '/upload', label: t('capture') },
   ]
 
   return (
     <div style={styles.wrapper}>
       <header style={styles.header}>
-        <Link to="/dashboard" style={styles.logo}>
+        <Link to="/inbox" style={styles.logo}>
           {t('auth.synapse')}
         </Link>
         <nav style={styles.nav}>
@@ -34,10 +37,10 @@ export function Layout() {
           ))}
         </nav>
         <div style={styles.rightActions}>
-          <LanguageToggle />
-          <button type="button" onClick={logout} className="header-logout">
-            {t('nav.logout')}
-          </button>
+          <ProfileLanguageSync />
+          <ThemeSync />
+          <HeaderNotificationsBell />
+          <HeaderProfileAvatar />
         </div>
       </header>
       <main style={styles.main}>

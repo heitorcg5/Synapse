@@ -28,10 +28,33 @@ public class Content {
     @Column(name = "source_url")
     private String sourceUrl;
 
+    /**
+     * Captured raw text (Digital Brain inbox). Optional for link/video-only capture.
+     */
+    @Column(name = "raw_content", columnDefinition = "TEXT")
+    private String rawContent;
+
+    /**
+     * Locale for AI and persisted knowledge (e.g. en, es).
+     */
+    @Column(length = 10)
+    private String language;
+
+    @Column
+    private String title;
+
+    @Column(name = "notifications_enabled")
+    private Boolean notificationsEnabled;
+
     @Column(nullable = false)
     private String status;
 
-    @Column(name = "uploaded_at", nullable = false, updatable = false)
+    @Column(
+            name = "uploaded_at",
+            nullable = false,
+            updatable = false,
+            columnDefinition = "TIMESTAMPTZ"
+    )
     private Instant uploadedAt;
 
     @PrePersist
