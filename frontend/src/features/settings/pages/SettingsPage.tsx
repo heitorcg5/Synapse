@@ -488,12 +488,15 @@ export function SettingsPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   title: {
-    fontSize: '1.5rem',
+    fontSize: '28px',
     fontWeight: 600,
+    lineHeight: 1.3,
+    letterSpacing: '-0.02em',
     marginBottom: '0.5rem',
   },
   subtitle: {
-    color: 'var(--text-muted)',
+    color: '#9CA3AF',
+    fontSize: '15px',
     marginBottom: '1.5rem',
     maxWidth: 720,
     lineHeight: 1.5,
@@ -540,8 +543,8 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 0,
   },
   hint: {
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
+    fontSize: '15px',
+    color: '#9CA3AF',
     marginBottom: '0.75rem',
     lineHeight: 1.45,
     marginTop: 0,
@@ -564,7 +567,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.35rem',
-    fontSize: '0.875rem',
+    fontSize: '13px',
+    fontWeight: 500,
     color: 'var(--text-muted)',
   },
   select: {

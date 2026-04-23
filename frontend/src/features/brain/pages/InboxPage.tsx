@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { Inbox } from 'lucide-react'
 import type { ContentResponse } from '@/shared/types/api'
 import { AiReviewModal } from '@/features/content/components/AiReviewModal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -9,6 +10,8 @@ import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { contentApi } from '@/features/content/api/content-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
 
 const STATUS_KEYS: Record<string, string> = {
   READY: 'statusReady',
@@ -33,6 +36,21 @@ export function InboxPage() {
 
   const runPipelineMutation = useMutation({
     mutationFn: (contentId: string) => contentApi.runProcessingPipeline(contentId),
+    onMutate: async (contentId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['inbox-list'] })
+      const previousInbox = queryClient.getQueryData<ContentResponse[]>(['inbox-list']) ?? []
+      // Optimistic UX: remove from pending inbox immediately while pipeline starts.
+      queryClient.setQueryData<ContentResponse[]>(['inbox-list'], (old) =>
+        (old ?? []).filter((item) => item.id !== contentId),
+      )
+      setSelectedIds((prev) => prev.filter((id) => id !== contentId))
+      return { previousInbox }
+    },
+    onError: (_error, _contentId, context) => {
+      if (context?.previousInbox) {
+        queryClient.setQueryData(['inbox-list'], context.previousInbox)
+      }
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['inbox-list'] }),
@@ -77,114 +95,116 @@ export function InboxPage() {
   const translateStatus = (status: string) => t(STATUS_KEYS[status] || status)
 
   if (isLoading && list.length === 0) {
-    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
+    return <p className="text-app-muted">{t('loading')}</p>
   }
   if (error && !list.length) {
-    return (
-      <p style={{ color: 'var(--error)' }}>{t('failedToLoad')}</p>
-    )
+    return <p className="text-app-error">{t('failedToLoad')}</p>
   }
 
   return (
     <div>
-      <div style={styles.header}>
-        <h1 style={styles.title}>{t('nav.inbox')}</h1>
-        <Link to="/upload" style={styles.uploadLink}>
+      <div className="mb-2 flex items-center justify-between">
+        <h1 className="text-[28px] font-semibold leading-[1.3] tracking-[-0.02em] text-app-text">{t('nav.inbox')}</h1>
+        <Link
+          to="/upload"
+          className="rounded-md bg-brand-purple px-4 py-2 text-white transition-all duration-150 ease-in-out hover:-translate-y-px"
+        >
           {t('capture')}
         </Link>
       </div>
-      <p style={styles.subtitle}>{t('inboxSubtitle')}</p>
+      <p className="mb-5 text-[15px] text-[#9CA3AF]">{t('inboxSubtitle')}</p>
 
       {isManualProcessing && (
-        <p style={styles.manualHint} role="note">
+        <p
+          className="mb-4 rounded-lg border border-[rgba(99,102,241,0.25)] bg-[rgba(99,102,241,0.08)] px-4 py-3 text-[0.9rem] text-app-text"
+          role="note"
+        >
           {t('inboxManualModeHint')}
         </p>
       )}
 
       {selectedPending.length > 0 && (
-        <div style={styles.reviewBar}>
-          <button type="button" style={styles.reviewBtn} onClick={openModal}>
+        <SurfaceContainer className="mb-4 flex items-center gap-3 p-4">
+          <button
+            type="button"
+            className="rounded-[10px] bg-brand-purple px-4 py-[0.65rem] font-semibold text-white transition-all duration-150 ease-in-out hover:-translate-y-px"
+            onClick={openModal}
+          >
             {t('reviewSelected')} ({selectedPending.length})
           </button>
           <button
             type="button"
-            style={styles.clearBtn}
+            className="rounded-[10px] border border-[var(--border)] bg-transparent px-4 py-[0.65rem] font-semibold text-app-muted transition-all duration-150 ease-in-out hover:-translate-y-px"
             onClick={() => setSelectedIds([])}
           >
             {t('clearSelection')}
           </button>
-        </div>
+        </SurfaceContainer>
       )}
 
       {list.length === 0 ? (
-        <div style={styles.empty}>
-          <p>{t('inboxEmpty')}</p>
-          <Link to="/upload">{t('capture')}</Link>
-          {' · '}
-          <Link to="/knowledge">{t('nav.knowledge')}</Link>
-        </div>
+        <SurfaceContainer>
+          <EmptyState
+            icon={<Inbox size={20} />}
+            title={t('nav.inbox')}
+            description={t('inboxEmpty')}
+            actionLabel={t('capture')}
+            actionTo="/upload"
+          />
+        </SurfaceContainer>
       ) : (
-        <div style={styles.section}>
-          <ul style={styles.list}>
+        <SurfaceContainer className="mb-5">
+          <ul className="flex list-none flex-col gap-2">
             {list.map((c) => (
               <li
                 key={c.id}
-                style={{
-                  ...styles.item,
-                  ...(selectedIds.includes(c.id) ? styles.itemSelected : {}),
-                }}
-                onClick={() => toggleSelected(c.id)}
-                role="checkbox"
-                aria-checked={selectedIds.includes(c.id)}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') toggleSelected(c.id)
-                }}
+                className={
+                  selectedIds.includes(c.id)
+                    ? 'overflow-hidden rounded-lg border border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.10)]'
+                    : 'overflow-hidden rounded-lg border border-[var(--border)]'
+                }
               >
-                <div style={styles.itemLink}>
+                <div className="flex items-center gap-4 p-4">
                   <input
+                    id={`select-${c.id}`}
                     type="checkbox"
                     checked={selectedIds.includes(c.id)}
-                    onClick={(e) => e.stopPropagation()}
                     onChange={() => toggleSelected(c.id)}
                   />
-                  <span style={styles.type}>{c.type}</span>
-                  <span style={styles.status}>{translateStatus(c.status)}</span>
+                  <label
+                    htmlFor={`select-${c.id}`}
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-4"
+                  >
+                    <span className="min-w-[80px] font-medium text-app-text">{c.type}</span>
+                    <span className="text-sm text-app-muted">{translateStatus(c.status)}</span>
+                  </label>
                   {isManualProcessing && (
                     <button
                       type="button"
-                      style={styles.processBtn}
+                      className="rounded-md bg-brand-purple px-[0.65rem] py-[0.35rem] text-[0.8rem] font-semibold text-white transition-all duration-150 ease-in-out hover:-translate-y-px"
                       disabled={runPipelineMutation.isPending}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        runPipelineMutation.mutate(c.id)
-                      }}
+                      onClick={() => runPipelineMutation.mutate(c.id)}
                     >
                       {t('inboxRunProcessing')}
                     </button>
                   )}
                   <button
                     type="button"
-                    style={styles.detailBtn}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/content/${c.id}`)
-                    }}
+                    className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[0.8rem] text-brand-purple transition-all duration-150 ease-in-out hover:-translate-y-px"
+                    onClick={() => navigate(`/content/${c.id}`)}
                   >
                     {t('details')}
                   </button>
-                  <span style={styles.date}>
-                    {new Date(c.uploadedAt).toLocaleDateString()}
-                  </span>
+                  <span className="ml-auto text-sm text-app-muted">{new Date(c.uploadedAt).toLocaleDateString()}</span>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
+        </SurfaceContainer>
       )}
 
       {runPipelineMutation.isError && (
-        <p style={styles.inlineError} role="alert">
+        <p className="mt-3 text-[0.9rem] text-app-error" role="alert">
           {getErrorMessage(runPipelineMutation.error)}
         </p>
       )}
@@ -199,133 +219,4 @@ export function InboxPage() {
       )}
     </div>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem',
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: 600,
-  },
-  subtitle: {
-    color: 'var(--text-muted)',
-    marginBottom: '1.25rem',
-    fontSize: '0.9rem',
-  },
-  manualHint: {
-    marginBottom: '1rem',
-    padding: '0.75rem 1rem',
-    borderRadius: 8,
-    fontSize: '0.9rem',
-    backgroundColor: 'rgba(99, 102, 241, 0.08)',
-    border: '1px solid rgba(99, 102, 241, 0.25)',
-    color: 'var(--text)',
-  },
-  inlineError: {
-    marginTop: '0.75rem',
-    color: 'var(--error)',
-    fontSize: '0.9rem',
-  },
-  uploadLink: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 500,
-  },
-  empty: {
-    padding: '2rem',
-    textAlign: 'center',
-    color: 'var(--text-muted)',
-  },
-  list: {
-    listStyle: 'none',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  item: {
-    border: '1px solid var(--border)',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  },
-  itemLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    padding: '1rem',
-    color: 'inherit',
-  },
-  reviewBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    marginBottom: '1rem',
-    padding: '0.75rem 1rem',
-    borderRadius: 10,
-    border: '1px solid var(--border)',
-    backgroundColor: 'var(--surface)',
-  },
-  reviewBtn: {
-    padding: '0.65rem 1rem',
-    borderRadius: 10,
-    border: 'none',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  clearBtn: {
-    padding: '0.65rem 1rem',
-    borderRadius: 10,
-    border: '1px solid var(--border)',
-    backgroundColor: 'transparent',
-    color: 'var(--text-muted)',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  type: {
-    fontWeight: 500,
-    minWidth: '80px',
-  },
-  status: {
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
-  },
-  date: {
-    marginLeft: 'auto',
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
-  },
-  section: {
-    marginBottom: '1.25rem',
-  },
-  itemSelected: {
-    backgroundColor: 'rgba(99, 102, 241, 0.10)',
-    borderColor: 'rgba(99, 102, 241, 0.55)',
-  },
-  detailBtn: {
-    padding: '0.25rem 0.5rem',
-    fontSize: '0.8rem',
-    borderRadius: 6,
-    border: '1px solid var(--border)',
-    background: 'var(--surface)',
-    color: 'var(--accent)',
-    cursor: 'pointer',
-  },
-  processBtn: {
-    padding: '0.35rem 0.65rem',
-    fontSize: '0.8rem',
-    borderRadius: 6,
-    border: 'none',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
 }

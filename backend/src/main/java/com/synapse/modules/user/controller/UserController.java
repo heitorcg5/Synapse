@@ -5,8 +5,8 @@ import com.synapse.modules.knowledge.dto.KnowledgeExportFile;
 import com.synapse.modules.knowledge.service.KnowledgeExportService;
 import com.synapse.modules.user.dto.UpdateProfileRequest;
 import com.synapse.modules.user.dto.UserResponse;
+import com.synapse.modules.user.web.CurrentUser;
 import com.synapse.modules.user.entity.User;
-import com.synapse.modules.user.repository.UserRepository;
 import com.synapse.modules.user.service.UserService;
 import com.synapse.modules.user.util.UserKnowledgeExportPreferences;
 import jakarta.validation.Valid;
@@ -15,8 +15,6 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,26 +27,19 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
     private final KnowledgeExportService knowledgeExportService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(userService.getById(userId));
+    public ResponseEntity<UserResponse> getCurrentUser(@CurrentUser User currentUser) {
+        return ResponseEntity.ok(userService.getById(currentUser.getId()));
     }
 
     @PatchMapping("/me")
     public ResponseEntity<UserResponse> updateProfile(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @Valid @RequestBody UpdateProfileRequest request
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(userService.updateProfile(userId, request));
+        return ResponseEntity.ok(userService.updateProfile(currentUser.getId(), request));
     }
 
     /**
@@ -56,14 +47,11 @@ public class UserController {
      */
     @GetMapping("/me/export")
     public ResponseEntity<byte[]> exportKnowledge(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestParam(required = false) String format
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        String f = resolveExportFormat(userId, format);
-        KnowledgeExportFile file = knowledgeExportService.exportAll(userId, f);
+        String f = resolveExportFormat(currentUser, format);
+        KnowledgeExportFile file = knowledgeExportService.exportAll(currentUser.getId(), f);
         return toFileResponse(file);
     }
 
@@ -72,24 +60,18 @@ public class UserController {
      */
     @GetMapping("/me/export/knowledge/{knowledgeItemId}")
     public ResponseEntity<byte[]> exportKnowledgeItem(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @PathVariable UUID knowledgeItemId,
             @RequestParam(required = false) String format
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        String f = resolveExportFormat(userId, format);
-        KnowledgeExportFile file = knowledgeExportService.exportOne(userId, knowledgeItemId, f);
+        String f = resolveExportFormat(currentUser, format);
+        KnowledgeExportFile file = knowledgeExportService.exportOne(currentUser.getId(), knowledgeItemId, f);
         return toFileResponse(file);
     }
 
     @GetMapping("/me/avatar")
-    public ResponseEntity<byte[]> getAvatar(@AuthenticationPrincipal UserDetails userDetails) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return userService.getAvatarBytes(userId)
+    public ResponseEntity<byte[]> getAvatar(@CurrentUser User currentUser) {
+        return userService.getAvatarBytes(currentUser.getId())
                 .map(avatar -> ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(avatar.contentType()))
                         .body(avatar.data()))
@@ -98,24 +80,18 @@ public class UserController {
 
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserResponse> uploadAvatar(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestPart("file") MultipartFile file
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(userService.updateAvatar(userId, file));
+        return ResponseEntity.ok(userService.updateAvatar(currentUser.getId(), file));
     }
 
     @DeleteMapping("/me/avatar")
-    public ResponseEntity<UserResponse> deleteAvatar(@AuthenticationPrincipal UserDetails userDetails) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(userService.clearAvatar(userId));
+    public ResponseEntity<UserResponse> deleteAvatar(@CurrentUser User currentUser) {
+        return ResponseEntity.ok(userService.clearAvatar(currentUser.getId()));
     }
 
-    private String resolveExportFormat(UUID userId, String formatParam) {
+    private String resolveExportFormat(User currentUser, String formatParam) {
         if (formatParam != null && !formatParam.isBlank()) {
             String n = UserKnowledgeExportPreferences.normalizeFormat(formatParam);
             if (n == null) {
@@ -123,9 +99,10 @@ public class UserController {
             }
             return n;
         }
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
-        return UserKnowledgeExportPreferences.effectiveExportFormat(user);
+        if (currentUser == null) {
+            throw new ResourceNotFoundException("USER_NOT_FOUND", "User not found");
+        }
+        return UserKnowledgeExportPreferences.effectiveExportFormat(currentUser);
     }
 
     private static ResponseEntity<byte[]> toFileResponse(KnowledgeExportFile file) {

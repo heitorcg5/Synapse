@@ -7,7 +7,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "contents")
+@Table(
+        name = "contents",
+        indexes = {
+                @Index(name = "idx_contents_user_uploaded_at", columnList = "user_id, uploaded_at"),
+                @Index(name = "idx_contents_user_status_uploaded_at", columnList = "user_id, status, uploaded_at"),
+                @Index(name = "idx_contents_user_source_url", columnList = "user_id, source_url")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

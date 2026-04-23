@@ -15,11 +15,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -51,7 +48,8 @@ public class OllamaProvider implements AiService {
                     + "specific to that topic; do not explain how YouTube works as a product.\n"
                     + "Reply ONLY in this format:\nTITLE: [3-8 word title]\n\nSUMMARY: [your summary]\nNo preamble. "
                     + "Reply in %s.";
-    private static final int MIN_CHUNK = 500;
+    private static final int MIN_CHUNK_TOKENS = 120;
+    private static final int APPROX_CHARS_PER_TOKEN = 4;
     private static final Map<String, Object> CLASSIFY_OPTIONS = Map.of("num_predict", 80, "temperature", 0.35);
     private static final String TAGS_SYSTEM_TEMPLATE =
             "You output short keywords (tags) for the user's content: technologies, topics, domains. "
@@ -67,12 +65,21 @@ public class OllamaProvider implements AiService {
 
     @Value("${synapse.ai.chunk-size-chars:6000}")
     private int chunkSizeChars;
+    @Value("${synapse.ai.chunk-size-tokens:1500}")
+    private int chunkSizeTokens;
 
     private int effectiveChunkChars(AiCallOptions options) {
         if (options != null && options.chunkSizeCharsOverride() != null && options.chunkSizeCharsOverride() > 0) {
             return options.chunkSizeCharsOverride();
         }
         return chunkSizeChars;
+    }
+
+    private int effectiveChunkTokens(AiCallOptions options) {
+        if (options != null && options.chunkSizeCharsOverride() != null && options.chunkSizeCharsOverride() > 0) {
+            return Math.max(200, options.chunkSizeCharsOverride() / APPROX_CHARS_PER_TOKEN);
+        }
+        return chunkSizeTokens;
     }
 
     @Override
@@ -82,12 +89,13 @@ public class OllamaProvider implements AiService {
         }
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         String cleaned = cleanText(text);
-        int maxChunk = effectiveChunkChars(opts);
+        int maxChunkTokens = effectiveChunkTokens(opts);
+        int maxChunkChars = effectiveChunkChars(opts);
         try {
-            if (cleaned.length() <= maxChunk) {
+            if (estimateTokens(cleaned) <= maxChunkTokens) {
                 return summarizeChunk(cleaned, opts);
             }
-            List<String> chunks = chunkText(cleaned, maxChunk);
+            List<String> chunks = chunkTextByTokens(cleaned, maxChunkTokens, maxChunkChars);
             List<String> chunkSummaries = new ArrayList<>();
             for (String chunk : chunks) {
                 String summary = summarizeChunk(chunk, opts);
@@ -142,10 +150,7 @@ public class OllamaProvider implements AiService {
             return new AiService.TitleAndSummary(fallbackTitle(opts.responseLanguage()), "");
         }
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
-        String cleaned = cleanText(text);
-        if (cleaned.length() > chunkSizeChars) {
-            cleaned = cleaned.substring(0, chunkSizeChars) + "...";
-        }
+        String cleaned = truncateToTokenBudget(cleanText(text), effectiveChunkTokens(opts), effectiveChunkChars(opts));
         try {
             String prompt = String.format(
                     "Generate a title and summary for the following capture. Stay anchored to this text only.\n\n"
@@ -189,18 +194,14 @@ public class OllamaProvider implements AiService {
             return List.of();
         }
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
-        String cleaned = cleanText(text);
-        int maxChunk = effectiveChunkChars(opts);
-        if (cleaned.length() > maxChunk) {
-            cleaned = cleaned.substring(0, maxChunk) + "...";
-        }
+        String cleaned = truncateToTokenBudget(cleanText(text), effectiveChunkTokens(opts), effectiveChunkChars(opts));
         try {
             String prompt = String.format(
                     "Classify the following text into 3 to 5 topics. Reply in %s.\n\nContent: %s\n\nReturn the result as JSON.",
                     langName(opts.responseLanguage()), cleaned);
             String systemMessage = String.format(CLASSIFICATION_SYSTEM_TEMPLATE, langName(opts.responseLanguage()));
-            String response = ollamaClient.generate(prompt, systemMessage, CLASSIFY_OPTIONS);
-            return parseTopicsFromResponse(response);
+            String response = ollamaClient.generateJson(prompt, systemMessage, CLASSIFY_OPTIONS);
+            return parseTopicsFromResponse(response, opts.responseLanguage());
         } catch (OllamaException e) {
             log.warn("Ollama classification failed: {}", e.getMessage());
             return fallbackTopics(opts.responseLanguage());
@@ -213,17 +214,13 @@ public class OllamaProvider implements AiService {
             return List.of();
         }
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
-        String cleaned = cleanText(text);
-        int maxChunk = effectiveChunkChars(opts);
-        if (cleaned.length() > maxChunk) {
-            cleaned = cleaned.substring(0, maxChunk) + "...";
-        }
+        String cleaned = truncateToTokenBudget(cleanText(text), effectiveChunkTokens(opts), effectiveChunkChars(opts));
         try {
             String prompt = String.format(
                     "Infer tags from the following Content.\n\nContent:\n%s",
                     cleaned);
             String systemMessage = String.format(TAGS_SYSTEM_TEMPLATE, langName(opts.responseLanguage()));
-            String response = ollamaClient.generate(prompt, systemMessage, TAG_OPTIONS);
+            String response = ollamaClient.generateJson(prompt, systemMessage, TAG_OPTIONS);
             List<String> tags = parseTagsObject(response);
             if (!tags.isEmpty()) {
                 return tags;
@@ -304,60 +301,94 @@ public class OllamaProvider implements AiService {
         return raw.trim().replaceAll("\\s+", " ");
     }
 
-    private List<String> chunkText(String text, int maxChunkSize) {
+    private List<String> chunkTextByTokens(String text, int maxChunkTokens, int maxChunkChars) {
         List<String> chunks = new ArrayList<>();
-        int start = 0;
-        while (start < text.length()) {
-            int end = Math.min(start + maxChunkSize, text.length());
-            if (end < text.length()) {
-                int lastSpace = text.lastIndexOf(' ', end);
-                if (lastSpace > start + MIN_CHUNK) {
-                    end = lastSpace + 1;
-                }
+        String[] words = text.split("\\s+");
+        StringBuilder current = new StringBuilder();
+        int tokenCount = 0;
+        for (String word : words) {
+            if (word == null || word.isBlank()) {
+                continue;
             }
-            chunks.add(text.substring(start, end).trim());
-            start = end;
+            int wordTokens = estimateTokens(word);
+            boolean chunkWouldOverflowTokens = tokenCount + wordTokens > maxChunkTokens;
+            boolean chunkWouldOverflowChars = current.length() + word.length() + 1 > maxChunkChars;
+            if ((chunkWouldOverflowTokens || chunkWouldOverflowChars) && tokenCount >= MIN_CHUNK_TOKENS) {
+                chunks.add(current.toString().trim());
+                current.setLength(0);
+                tokenCount = 0;
+            }
+            if (current.length() > 0) {
+                current.append(' ');
+            }
+            current.append(word);
+            tokenCount += wordTokens;
+        }
+        if (current.length() > 0) {
+            chunks.add(current.toString().trim());
         }
         return chunks;
     }
 
-    private List<String> parseTopicsFromResponse(String response) {
+    private List<String> parseTopicsFromResponse(String response, String language) {
         if (response == null || response.isBlank()) {
             return List.of("general");
         }
         String trimmed = response.trim();
-        int start = trimmed.indexOf('[');
-        int end = trimmed.lastIndexOf(']');
-        if (start >= 0 && end > start) {
-            try {
-                String json = trimmed.substring(start, end + 1);
-                List<String> topics = objectMapper.readValue(json, new TypeReference<>() {});
-                if (topics != null && !topics.isEmpty()) {
-                    return topics.stream()
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .limit(5)
-                            .collect(Collectors.toList());
-                }
-            } catch (Exception e) {
-                log.debug("Could not parse topics as JSON: {}", e.getMessage());
+        try {
+            JsonNode root = objectMapper.readTree(trimmed);
+            JsonNode arr = root;
+            if (root.isObject()) {
+                arr = root.get("topics");
             }
+            if (arr != null && arr.isArray()) {
+                List<String> topics = new ArrayList<>();
+                for (JsonNode n : arr) {
+                    if (n != null && n.isTextual()) {
+                        String topic = n.asText().trim();
+                        if (!topic.isEmpty()) {
+                            topics.add(topic);
+                        }
+                    }
+                }
+                if (!topics.isEmpty()) {
+                    return topics.stream().limit(5).collect(Collectors.toList());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not parse topics JSON: {}", e.getMessage());
         }
-        Matcher quoted = Pattern.compile("\"([^\"]+)\"").matcher(trimmed);
-        List<String> topics = new ArrayList<>();
-        while (quoted.find() && topics.size() < 5) {
-            String topic = quoted.group(1).trim();
-            if (!topic.isEmpty()) topics.add(topic);
+        return fallbackTopics(language);
+    }
+
+    private String truncateToTokenBudget(String text, int maxTokens, int maxChars) {
+        if (text == null || text.isBlank()) {
+            return "";
         }
-        if (!topics.isEmpty()) return topics;
-        String[] byComma = trimmed.split("[,;\\n]");
-        return Arrays.stream(byComma)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> s.replaceAll("^[\\[\\]\"]+|[\\[\\]\"]+$", "").trim())
-                .filter(s -> !s.isEmpty())
-                .limit(5)
-                .collect(Collectors.toList());
+        if (estimateTokens(text) <= maxTokens && text.length() <= maxChars) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        int tokenCount = 0;
+        for (String word : text.split("\\s+")) {
+            if (word == null || word.isBlank()) continue;
+            int t = estimateTokens(word);
+            if (tokenCount + t > maxTokens || sb.length() + word.length() + 1 > maxChars) {
+                break;
+            }
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(word);
+            tokenCount += t;
+        }
+        return sb.toString().trim() + "...";
+    }
+
+    private int estimateTokens(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        int chars = text.length();
+        return Math.max(1, (int) Math.ceil(chars / (double) APPROX_CHARS_PER_TOKEN));
     }
 
     private String fallbackSummary(String text, String language) {

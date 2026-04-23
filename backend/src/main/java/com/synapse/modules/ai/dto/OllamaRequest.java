@@ -19,6 +19,8 @@ public class OllamaRequest {
     private Boolean stream;
     private String system;
     private Map<String, Object> options;
+    /** Optional Ollama response format (e.g. "json"). */
+    private String format;
 
     @JsonProperty("stream")
     public Boolean getStream() {

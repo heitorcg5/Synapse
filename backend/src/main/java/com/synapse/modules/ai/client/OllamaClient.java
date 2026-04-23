@@ -53,6 +53,15 @@ public class OllamaClient {
      * Send a prompt with optional system message and options (e.g. num_predict for shorter/faster output).
      */
     public String generate(String prompt, String systemMessage, Map<String, Object> options) {
+        return generate(prompt, systemMessage, options, null);
+    }
+
+    /** Request JSON-structured output from Ollama. */
+    public String generateJson(String prompt, String systemMessage, Map<String, Object> options) {
+        return generate(prompt, systemMessage, options, "json");
+    }
+
+    private String generate(String prompt, String systemMessage, Map<String, Object> options, String format) {
         String url = baseUrl.endsWith("/") ? baseUrl + GENERATE_PATH.substring(1) : baseUrl + GENERATE_PATH;
         OllamaRequest request = OllamaRequest.builder()
                 .model(model)
@@ -60,6 +69,7 @@ public class OllamaClient {
                 .stream(false)
                 .system(systemMessage)
                 .options(options)
+                .format(format)
                 .build();
 
         HttpHeaders headers = new HttpHeaders();

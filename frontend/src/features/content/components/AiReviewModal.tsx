@@ -4,6 +4,8 @@ import type { ConfirmContentRequest } from '@/shared/types/api'
 import { contentApi } from '../api/content-api'
 import { useTranslation } from 'react-i18next'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { Input } from '@/shared/components/ui/Input'
+import { Textarea } from '@/shared/components/ui/Textarea'
 
 type PanelState = {
   loadingPreview: boolean
@@ -210,8 +212,7 @@ export function AiReviewModal({
                     )}
                     <label style={styles.label}>
                       {t('title')}
-                      <input
-                        style={styles.input}
+                      <Input
                         value={panelStates[i]?.title ?? ''}
                         disabled={panelStates[i]?.confirming}
                         onChange={(e) => {
@@ -229,8 +230,8 @@ export function AiReviewModal({
 
                     <label style={styles.label}>
                       {t('summary')}
-                      <textarea
-                        style={styles.textarea}
+                      <Textarea
+                        className="resize-y whitespace-pre-wrap"
                         rows={10}
                         value={panelStates[i]?.summaryText ?? ''}
                         disabled={panelStates[i]?.confirming}
@@ -356,24 +357,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '1rem',
     color: 'var(--text-muted)',
     fontSize: '0.9rem',
-  },
-  input: {
-    padding: '0.75rem',
-    borderRadius: 10,
-    border: '1px solid var(--border)',
-    backgroundColor: 'var(--bg)',
-    color: 'var(--text)',
-    outline: 'none',
-  },
-  textarea: {
-    padding: '0.75rem',
-    borderRadius: 10,
-    border: '1px solid var(--border)',
-    backgroundColor: 'var(--bg)',
-    color: 'var(--text)',
-    outline: 'none',
-    resize: 'vertical',
-    whiteSpace: 'pre-wrap',
   },
   checkboxRow: {
     display: 'flex',

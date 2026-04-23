@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
 import { authApi } from '../api/auth-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { Card } from '@/shared/components/ui/Card'
+import { Button } from '@/shared/components/ui/Button'
+import { Input } from '@/shared/components/ui/Input'
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -30,114 +33,49 @@ export function LoginPage() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>{t('auth.synapse')}</h1>
-        <p style={styles.subtitle}>{t('auth.subtitle')}</p>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          {error && (
-            <div style={styles.error} role="alert">
+    <div className="flex min-h-screen items-center justify-center bg-app-gradient px-4">
+      <Card className="w-full max-w-md p-8">
+        <h1 className="font-heading text-3xl font-semibold text-app-text">{t('auth.synapse')}</h1>
+        <p className="mt-3 text-sm text-app-muted">{t('auth.subtitle')}</p>
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+          {error ? (
+            <div className="rounded-xl border border-app-error/40 bg-app-error/10 px-3 py-2 text-sm text-app-error" role="alert">
               {error}
             </div>
-          )}
-          <label style={styles.label}>
+          ) : null}
+
+          <label className="flex flex-col gap-1 text-[13px] font-medium text-app-muted">
             {t('auth.email')}
-            <input
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              style={styles.input}
             />
           </label>
-          <label style={styles.label}>
+
+          <label className="flex flex-col gap-1 text-[13px] font-medium text-app-muted">
             {t('auth.password')}
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              style={styles.input}
             />
           </label>
-          <button type="submit" disabled={loading} style={styles.button}>
+
+          <Button type="submit" disabled={loading} className="mt-2 w-full">
             {loading ? t('auth.signingIn') : t('auth.signIn')}
-          </button>
+          </Button>
         </form>
-        <p style={styles.footer}>
-          {t('auth.noAccount')} <Link to="/register">{t('auth.registerLink')}</Link>
+
+        <p className="mt-6 text-center text-sm text-app-muted">
+          {t('auth.noAccount')} <Link to="/register" className="text-brand-cyan">{t('auth.registerLink')}</Link>
         </p>
-      </div>
+      </Card>
     </div>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '1rem',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '380px',
-    padding: '2rem',
-    backgroundColor: 'var(--surface)',
-    borderRadius: '12px',
-    border: '1px solid var(--border)',
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: 700,
-    marginBottom: '0.25rem',
-  },
-  subtitle: {
-    color: 'var(--text-muted)',
-    marginBottom: '1.5rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  error: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    color: 'var(--error)',
-    fontSize: '0.875rem',
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem',
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
-  },
-  input: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: '1px solid var(--border)',
-    backgroundColor: 'var(--bg)',
-    color: 'var(--text)',
-  },
-  button: {
-    padding: '0.75rem',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 600,
-    marginTop: '0.5rem',
-  },
-  footer: {
-    marginTop: '1.5rem',
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
-    textAlign: 'center',
-  },
 }

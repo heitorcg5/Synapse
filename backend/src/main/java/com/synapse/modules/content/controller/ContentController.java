@@ -8,15 +8,13 @@ import com.synapse.modules.content.dto.SummaryResponse;
 import com.synapse.modules.content.dto.TagResponse;
 import com.synapse.modules.content.service.ContentService;
 import com.synapse.modules.processing.service.ProcessingService;
+import com.synapse.modules.user.web.CurrentUser;
 import com.synapse.modules.user.entity.User;
-import com.synapse.modules.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,22 +28,18 @@ import java.util.UUID;
 public class ContentController {
 
     private final ContentService contentService;
-    private final UserRepository userRepository;
     private final ProcessingService processingService;
 
     @PostMapping
     public ResponseEntity<ContentResponse> create(
             @Valid @RequestBody CreateContentRequest request,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
         String language = parseLanguage(acceptLanguage);
         log.warn("LANG_DEBUG POST /content Accept-Language='{}' -> language='{}'", acceptLanguage, language);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(contentService.create(userId, request, language, acceptLanguage));
+                .body(contentService.create(currentUser.getId(), request, language, acceptLanguage));
     }
 
     private static String parseLanguage(String acceptLanguage) {
@@ -60,39 +54,33 @@ public class ContentController {
     @PostMapping("/{id}/ai-preview")
     public ResponseEntity<AiPreviewResponse> aiPreview(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
         // access check
-        contentService.getById(id, userId);
-        return ResponseEntity.ok(processingService.generateAiPreview(id, userId, acceptLanguage));
+        contentService.getById(id, currentUser.getId());
+        return ResponseEntity.ok(processingService.generateAiPreview(id, currentUser.getId(), acceptLanguage));
     }
 
     @PostMapping("/{id}/confirm")
     public ResponseEntity<ContentResponse> confirm(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage,
             @Valid @RequestBody ConfirmContentRequest request
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
         // access check
-        contentService.getById(id, userId);
+        contentService.getById(id, currentUser.getId());
         processingService.confirmContent(
                 id,
-                userId,
+                currentUser.getId(),
                 acceptLanguage,
                 request.getTitle(),
                 request.getSummaryText(),
                 request.getNotificationsEnabled() != null && request.getNotificationsEnabled()
         );
 
-        return ResponseEntity.ok(contentService.getById(id, userId));
+        return ResponseEntity.ok(contentService.getById(id, currentUser.getId()));
     }
 
     /**
@@ -101,67 +89,49 @@ public class ContentController {
     @PostMapping("/{id}/process")
     public ResponseEntity<Void> runProcessing(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails,
+            @CurrentUser User currentUser,
             @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        contentService.getById(id, userId);
-        contentService.runProcessingPipeline(id, userId, acceptLanguage);
+        contentService.getById(id, currentUser.getId());
+        contentService.runProcessingPipeline(id, currentUser.getId(), acceptLanguage);
         return ResponseEntity.accepted().build();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ContentResponse> getById(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails
+            @CurrentUser User currentUser
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(contentService.getById(id, userId));
+        return ResponseEntity.ok(contentService.getById(id, currentUser.getId()));
     }
 
     @GetMapping("/user")
-    public ResponseEntity<List<ContentResponse>> listByUser(@AuthenticationPrincipal UserDetails userDetails) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(contentService.listByUser(userId));
+    public ResponseEntity<List<ContentResponse>> listByUser(@CurrentUser User currentUser) {
+        return ResponseEntity.ok(contentService.listByUser(currentUser.getId()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails
+            @CurrentUser User currentUser
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        contentService.delete(id, userId);
+        contentService.delete(id, currentUser.getId());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/summary")
     public ResponseEntity<SummaryResponse> getSummary(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails
+            @CurrentUser User currentUser
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(contentService.getSummary(id, userId));
+        return ResponseEntity.ok(contentService.getSummary(id, currentUser.getId()));
     }
 
     @GetMapping("/{id}/tags")
     public ResponseEntity<List<TagResponse>> getTags(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails
+            @CurrentUser User currentUser
     ) {
-        UUID userId = userRepository.findByEmail(userDetails.getUsername())
-                .map(User::getId)
-                .orElseThrow();
-        return ResponseEntity.ok(contentService.getTags(id, userId));
+        return ResponseEntity.ok(contentService.getTags(id, currentUser.getId()));
     }
 }

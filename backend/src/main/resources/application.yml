@@ -17,13 +17,18 @@ spring:
       maximum-pool-size: 10
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:
         format_sql: true
         default_schema: public
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
 
 server:
   port: ${SERVER_PORT:8080}
@@ -41,6 +46,7 @@ synapse:
     ollama-url: ${OLLAMA_URL:http://localhost:11434}
     model: ${OLLAMA_MODEL:llama3}
     chunk-size-chars: ${AI_CHUNK_SIZE:6000}
+    chunk-size-tokens: ${AI_CHUNK_TOKENS:1500}
 
 logging:
   level:

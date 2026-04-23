@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { useContent } from '../hooks/useContent'
 import { useQuery } from '@tanstack/react-query'
 import { contentApi } from '../api/content-api'
+import { Badge } from '@/shared/components/ui/Badge'
+import { Button } from '@/shared/components/ui/Button'
+import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
 
 const STATUS_KEYS: Record<string, string> = {
   READY: 'statusReady',
@@ -22,55 +25,50 @@ export function ContentDetailsPage() {
     enabled: !!id,
     refetchInterval: 5_000,
   })
+  const statusTone = (status: string): 'default' | 'success' | 'warning' | 'error' => {
+    if (status === 'READY') return 'success'
+    if (status === 'FAILED') return 'error'
+    if (status === 'PENDING') return 'warning'
+    return 'default'
+  }
 
   if (isLoading || !id) {
-    return <p style={{ color: 'var(--text-muted)' }}>{t('loading')}</p>
+    return <p className="text-app-muted">{t('loading')}</p>
   }
   if (error || !content) {
-    return (
-      <p style={{ color: 'var(--error)' }}>
-        {t('contentNotFoundOrFailed')}
-      </p>
-    )
+    return <p className="text-app-error">{t('contentNotFoundOrFailed')}</p>
   }
 
   return (
     <div>
-      <div style={styles.header}>
-        <Link to="/inbox" style={styles.back}>
+      <div className="mb-4">
+        <Link to="/inbox" className="text-sm text-app-muted">
           ← {t('backToInbox')}
         </Link>
       </div>
-      <div style={styles.card}>
-        <h1 style={styles.title}>{t('contentDetails')}</h1>
-        <dl style={styles.dl}>
-          <dt style={styles.dt}>ID</dt>
-          <dd style={styles.dd}>{content.id}</dd>
-          <dt style={styles.dt}>{t('type')}</dt>
-          <dd style={styles.dd}>{content.type}</dd>
-          <dt style={styles.dt}>{t('title')}</dt>
-          <dd style={styles.dd}>{content.title || '—'}</dd>
-          <dt style={styles.dt}>{t('status')}</dt>
-          <dd style={styles.dd}>
-            <span
-              style={{
-                ...styles.badge,
-                ...(content.status === 'READY'
-                  ? { backgroundColor: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }
-                  : {}),
-              }}
-            >
+      <SurfaceContainer>
+        <h1 className="mb-4 text-[28px] font-semibold leading-[1.3] tracking-[-0.02em] text-app-text">
+          {t('contentDetails')}
+        </h1>
+        <dl className="mb-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+          <dt className="text-sm text-app-muted">ID</dt>
+          <dd className="m-0 text-sm">{content.id}</dd>
+          <dt className="text-sm text-app-muted">{t('type')}</dt>
+          <dd className="m-0 text-sm">{content.type}</dd>
+          <dt className="text-sm text-app-muted">{t('title')}</dt>
+          <dd className="m-0 text-sm">{content.title || '—'}</dd>
+          <dt className="text-sm text-app-muted">{t('status')}</dt>
+          <dd className="m-0 text-sm">
+            <Badge tone={statusTone(content.status)} className="rounded-md px-2 py-1 normal-case tracking-normal">
               {translateStatus(content.status)}
-            </span>
+            </Badge>
           </dd>
-          <dt style={styles.dt}>{t('uploaded')}</dt>
-          <dd style={styles.dd}>
-            {new Date(content.uploadedAt).toLocaleString()}
-          </dd>
+          <dt className="text-sm text-app-muted">{t('uploaded')}</dt>
+          <dd className="m-0 text-sm">{new Date(content.uploadedAt).toLocaleString()}</dd>
           {content.sourceUrl && (
             <>
-              <dt style={styles.dt}>{t('sourceUrl')}</dt>
-              <dd style={styles.dd}>
+              <dt className="text-sm text-app-muted">{t('sourceUrl')}</dt>
+              <dd className="m-0 text-sm">
                 <a
                   href={content.sourceUrl}
                   target="_blank"
@@ -83,88 +81,27 @@ export function ContentDetailsPage() {
           )}
         </dl>
         {tags.length > 0 && (
-          <div style={styles.tags}>
+          <div className="mb-4 text-sm">
             <strong>{t('tags')}:</strong>{' '}
             {tags.map((t) => (
-              <span key={t.id} style={styles.tag}>
+              <span
+                key={t.id}
+                className="mr-2 inline-flex rounded-md bg-brand-purple/20 px-2 py-1 text-brand-purple"
+              >
                 {t.name}
               </span>
             ))}
           </div>
         )}
-        <div style={styles.actions}>
+        <div className="mt-4 border-t border-[var(--border)] pt-4">
           <Link
             to={`/content/${content.id}/summary`}
-            style={styles.summaryLink}
+            className="no-underline"
           >
-            {t('viewSummary')}
+            <Button size="sm">{t('viewSummary')}</Button>
           </Link>
         </div>
-      </div>
+      </SurfaceContainer>
     </div>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  header: { marginBottom: '1rem' },
-  back: {
-    color: 'var(--text-muted)',
-    fontSize: '0.875rem',
-  },
-  card: {
-    padding: '1.5rem',
-    backgroundColor: 'var(--surface)',
-    borderRadius: '12px',
-    border: '1px solid var(--border)',
-  },
-  title: {
-    fontSize: '1.25rem',
-    fontWeight: 600,
-    marginBottom: '1rem',
-  },
-  dl: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr',
-    gap: '0.5rem 1.5rem',
-    marginBottom: '1rem',
-  },
-  dt: {
-    color: 'var(--text-muted)',
-    fontSize: '0.875rem',
-  },
-  dd: {
-    margin: 0,
-    fontSize: '0.875rem',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    backgroundColor: 'var(--surface)',
-    fontSize: '0.75rem',
-  },
-  tags: {
-    marginBottom: '1rem',
-    fontSize: '0.875rem',
-  },
-  tag: {
-    display: 'inline-block',
-    marginRight: '0.5rem',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-    color: 'var(--accent)',
-  },
-  actions: {
-    marginTop: '1rem',
-    paddingTop: '1rem',
-    borderTop: '1px solid var(--border)',
-  },
-  summaryLink: {
-    padding: '0.5rem 1rem',
-    borderRadius: '6px',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 500,
-  },
 }

@@ -9,6 +9,8 @@ import com.synapse.modules.content.entity.Tag;
 import com.synapse.modules.content.repository.ContentRepository;
 import com.synapse.modules.content.repository.ContentTagRepository;
 import com.synapse.modules.content.repository.TagRepository;
+import com.synapse.modules.content.service.WebContentExtractionService;
+import com.synapse.modules.content.service.YouTubeTranscriptService;
 import com.synapse.modules.processing.entity.AnalysisResult;
 import com.synapse.modules.processing.entity.ProcessingJob;
 import com.synapse.modules.processing.repository.AnalysisResultRepository;
@@ -22,8 +24,6 @@ import com.synapse.modules.user.repository.UserRepository;
 import com.synapse.modules.user.util.UserKnowledgePreferences;
 import com.synapse.modules.user.util.UserProcessingPreferences;
 import com.synapse.modules.processing.ProcessingPipelineOptions;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.modules.user.util.UserAiPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,19 +32,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -72,7 +59,8 @@ public class ProcessingService {
     private final AiService aiService;
     private final KnowledgeService knowledgeService;
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
+    private final WebContentExtractionService webContentExtractionService;
+    private final YouTubeTranscriptService youTubeTranscriptService;
     private final NotificationService notificationService;
 
     private static final String STATUS_RUNNING = "RUNNING";
@@ -84,10 +72,6 @@ public class ProcessingService {
     private static final int PREVIEW_MAX_CHARS = 2200;
     private static final long PREVIEW_CACHE_TTL_SECONDS = 300;
 
-    private static final HttpClient YOUTUBE_HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
     /**
      * Small in-memory cache to avoid regenerating the same preview repeatedly.
      * Key format: contentId:previewCacheKey (language + summary detail).
@@ -97,8 +81,7 @@ public class ProcessingService {
     /**
      * Full pipeline after capture (immediate mode). Creates a new RUNNING job.
      */
-    @Async
-    @Transactional
+    @Async("processingExecutor")
     public void processContentAsync(UUID contentId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         ProcessingPipelineOptions pipe = pipeline != null
@@ -121,8 +104,7 @@ public class ProcessingService {
     /**
      * User-triggered processing (e.g. manual mode) for a pending capture.
      */
-    @Async
-    @Transactional
+    @Async("processingExecutor")
     public void startManualPipelineAsync(UUID contentId, UUID userId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("Content not found"));
@@ -147,7 +129,7 @@ public class ProcessingService {
     /**
      * Background queue: transition QUEUED job to pipeline (must match user {@code background} mode).
      */
-    @Transactional
+    @Async("processingExecutor")
     public void processQueuedJob(UUID jobId) {
         ProcessingJob job = processingJobRepository.findById(jobId).orElse(null);
         if (job == null || !STATUS_QUEUED.equals(job.getStatus())) {
@@ -184,7 +166,7 @@ public class ProcessingService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
         String lang = opts.responseLanguage();
         updateJobStep(jobId, "EXTRACTION");
-        String rawText = extractText(contentId);
+        String rawText = extractText(contentId, lang);
         updateJobStep(jobId, "CLEANING");
         String cleanedText = cleanText(rawText);
         updateJobStep(jobId, "ANALYSIS");
@@ -246,7 +228,6 @@ public class ProcessingService {
      * Generates AI suggestions for the "pending confirmation" modal.
      * This does not persist anything yet.
      */
-    @Transactional(readOnly = true)
     public AiPreviewResponse generateAiPreview(UUID contentId, UUID userId, String acceptLanguageHeader) {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("Content not found"));
@@ -262,7 +243,7 @@ public class ProcessingService {
             return cached.preview();
         }
 
-        String rawText = extractText(contentId);
+        String rawText = extractText(contentId, opts.responseLanguage());
         String cleanedText = cleanText(rawText);
         if (cleanedText.length() > PREVIEW_MAX_CHARS) {
             cleanedText = cleanedText.substring(0, PREVIEW_MAX_CHARS) + "...";
@@ -373,8 +354,7 @@ public class ProcessingService {
 
     private record CachedPreview(AiPreviewResponse preview, Instant createdAt) {}
 
-    @Async
-    @Transactional
+    @Async("processingExecutor")
     public void runBackgroundEnrichment(UUID contentId, AiCallOptions options) {
         Content content = contentRepository.findById(contentId).orElse(null);
         if (content == null) {
@@ -385,7 +365,7 @@ public class ProcessingService {
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         String lang = opts.responseLanguage();
         try {
-            String rawText = extractText(contentId);
+            String rawText = extractText(contentId, lang);
             String cleanedText = cleanText(rawText);
             saveAnalysis(contentId, cleanedText, lang);
             updateJobStepCreateIfNeeded(contentId, "CONFIRMATION");
@@ -440,17 +420,17 @@ public class ProcessingService {
         });
     }
 
-    private String extractText(UUID contentId) {
+    private String extractText(UUID contentId, String preferredLanguage) {
         return contentRepository.findById(contentId)
-                .map(this::extractTextFromContent)
+                .map(c -> extractTextFromContent(c, preferredLanguage))
                 .orElse("");
     }
 
     /**
-     * YouTube watch pages are mostly JS; {@link #fetchContentFromUrl} often yields boilerplate (privacy, policies).
-     * Prefer official oEmbed metadata (title + channel) so the model summarizes the actual video topic.
+     * Extracts best-available capture text:
+     * raw content > YouTube transcript+metadata > readable web article extraction.
      */
-    private String extractTextFromContent(Content c) {
+    private String extractTextFromContent(Content c, String preferredLanguage) {
         String url = c.getSourceUrl() != null ? c.getSourceUrl().trim() : "";
         String raw = c.getRawContent() != null ? c.getRawContent().trim() : "";
 
@@ -459,18 +439,18 @@ public class ProcessingService {
         }
 
         if (!url.isEmpty() && isYouTubeWatchUrl(url)) {
-            String yt = fetchYouTubeCaptureText(url);
+            String yt = youTubeTranscriptService.buildCaptureText(url, preferredLanguage);
             if (!yt.isEmpty()) {
                 return raw.isEmpty() ? yt : raw + "\n\n---\n" + yt;
             }
-            log.debug("YouTube oEmbed empty for {}, falling back to HTML fetch", url);
+            log.debug("YouTube transcript/metadata empty for {}, falling back to web extraction", url);
         }
 
         if (!raw.isEmpty()) {
             return raw;
         }
         if (!url.isEmpty()) {
-            return fetchContentFromUrl(url);
+            return webContentExtractionService.fetchReadableText(url);
         }
         return "";
     }
@@ -481,73 +461,6 @@ public class ProcessingService {
         }
         String u = url.toLowerCase(Locale.ROOT);
         return u.contains("youtube.com/") || u.contains("youtu.be/");
-    }
-
-    private String fetchYouTubeCaptureText(String watchUrl) {
-        try {
-            String enc = URLEncoder.encode(watchUrl, StandardCharsets.UTF_8);
-            String oembed = "https://www.youtube.com/oembed?format=json&url=" + enc;
-            String body = httpGet(oembed);
-            JsonNode root = objectMapper.readTree(body);
-            String title = root.path("title").asText("").trim();
-            String author = root.path("author_name").asText("").trim();
-            if (title.isEmpty() && author.isEmpty()) {
-                return "";
-            }
-            StringBuilder sb = new StringBuilder();
-            sb.append("YouTube video — metadata only (no transcript in this capture).\n");
-            if (!title.isEmpty()) {
-                sb.append("Video title: ").append(title).append('\n');
-            }
-            if (!author.isEmpty()) {
-                sb.append("Channel: ").append(author).append('\n');
-            }
-            sb.append("URL: ").append(watchUrl);
-            return sb.toString();
-        } catch (Exception e) {
-            log.warn("YouTube oEmbed failed for {}: {}", watchUrl, e.getMessage());
-            return "";
-        }
-    }
-
-    private static String httpGet(String uri) throws IOException, InterruptedException {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(uri))
-                .GET()
-                .header("User-Agent", "Mozilla/5.0 (compatible; Synapse/1.0)")
-                .timeout(Duration.ofSeconds(12))
-                .build();
-        HttpResponse<String> res = YOUTUBE_HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-        if (res.statusCode() < 200 || res.statusCode() >= 300) {
-            throw new IOException("HTTP " + res.statusCode());
-        }
-        return res.body();
-    }
-
-    /**
-     * Fetches a URL and extracts readable text from the HTML (main content).
-     */
-    private String fetchContentFromUrl(String url) {
-        try {
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (compatible; Synapse/1.0)")
-                    .timeout(15_000)
-                    .followRedirects(true)
-                    .get();
-
-            doc.select("script, style, nav, footer, header, aside, noscript").remove();
-            Elements main = doc.select("article, main, [role=main], .content, .post, .article");
-            String text = main.isEmpty()
-                    ? doc.body().text()
-                    : main.text();
-
-            if (text != null && !text.isBlank()) {
-                return text.trim();
-            }
-            return doc.title() != null ? doc.title() : "";
-        } catch (Exception e) {
-            log.warn("Could not fetch URL {}: {}", url, e.getMessage());
-            return "";
-        }
     }
 
     private String cleanText(String raw) {
