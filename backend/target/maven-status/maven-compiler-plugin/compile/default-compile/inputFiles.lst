@@ -3,6 +3,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/service/KnowledgeService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/client/OllamaException.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/dto/ProcessingJobResponse.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/entity/ContentFolder.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/dto/KnowledgeGraphEdgeResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/ProcessingQueueScheduler.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/security/JwtAuthenticationFilter.java
@@ -16,12 +17,14 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/entity/ContentTag.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/AiPreviewResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/dto/AssignKnowledgeFolderRequest.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/CreateContentFolderRequest.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/util/UserKnowledgePreferences.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/entity/ProcessingJob.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/web/CurrentUser.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/ProcessingJobCleanup.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/summary/entity/Summary.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/controller/KnowledgeController.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/ContentFolderResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/controller/ContentController.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/RestTemplateConfig.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/TagResponse.java
@@ -49,6 +52,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/ProcessingJobRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/dto/OllamaResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/exceptions/GlobalExceptionHandler.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/repository/ContentFolderRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/service/YouTubeTranscriptService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/SecurityConfig.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/TraceIdFilter.java
@@ -71,6 +75,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/service/ContentService.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/repository/UserRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/AnalysisResultRepository.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/notification/ContentReminderScheduler.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/user/dto/RegisterRequest.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/repository/KnowledgeItemRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/provider/OllamaProvider.java
@@ -78,6 +83,7 @@
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/ai/SummaryDetailLevel.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/ContentResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/config/WebMvcConfig.java
+/Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/dto/AssignContentFolderRequest.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/auth/dto/AuthResponse.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/content/repository/ContentRepository.java
 /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/knowledge/entity/KnowledgeItem.java

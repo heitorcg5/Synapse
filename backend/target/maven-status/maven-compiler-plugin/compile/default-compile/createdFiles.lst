@@ -1,0 +1,8 @@
+com/synapse/modules/content/dto/AssignContentFolderRequest.class
+com/synapse/modules/content/dto/ContentFolderResponse$ContentFolderResponseBuilder.class
+com/synapse/modules/content/dto/CreateContentFolderRequest.class
+com/synapse/modules/notification/ContentReminderScheduler.class
+com/synapse/modules/content/entity/ContentFolder.class
+com/synapse/modules/content/dto/ContentFolderResponse.class
+com/synapse/modules/content/repository/ContentFolderRepository.class
+com/synapse/modules/content/entity/ContentFolder$ContentFolderBuilder.class

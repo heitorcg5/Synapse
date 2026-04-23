@@ -6,5 +6,7 @@ public enum NotificationType {
     /** Same source URL already exists for this user. */
     DUPLICATE_DETECTED,
     /** Auto-link created one or more RELATED edges between knowledge notes. */
-    NEW_CONNECTION
+    NEW_CONNECTION,
+    /** User-scheduled reminder for a specific capture. */
+    CONTENT_REMINDER
 }

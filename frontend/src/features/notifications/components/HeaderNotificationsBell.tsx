@@ -15,6 +15,7 @@ function notificationTargetPath(n: NotificationItem): string | null {
   switch (n.type) {
     case 'PROCESSING_FINISHED':
     case 'DUPLICATE_DETECTED':
+    case 'CONTENT_REMINDER':
       return n.contentId ? `/content/${n.contentId}` : null
     case 'NEW_CONNECTION':
       return n.knowledgeItemId ? `/knowledge/${n.knowledgeItemId}` : null
@@ -115,6 +116,8 @@ export function HeaderNotificationsBell() {
         const c = n.connectionCount ?? 0
         return t('notifications.typeNewConnection', { count: c })
       }
+      case 'CONTENT_REMINDER':
+        return t('notifications.typeContentReminder')
       default:
         return n.type
     }

@@ -68,7 +68,10 @@ public class ProcessingService {
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_FAILED = "FAILED";
     private static final String STATUS_PENDING = "PENDING";
+    private static final String CONTENT_STATUS_CONFIRMED = "CONFIRMED";
+    private static final String CONTENT_STATUS_PROCESSING = "PROCESSING";
     private static final String CONTENT_STATUS_READY = "READY";
+    private static final String CONTENT_STATUS_FAILED = "FAILED";
     private static final int PREVIEW_MAX_CHARS = 2200;
     private static final long PREVIEW_CACHE_TTL_SECONDS = 300;
 
@@ -83,6 +86,10 @@ public class ProcessingService {
      */
     @Async("processingExecutor")
     public void processContentAsync(UUID contentId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
+        contentRepository.findById(contentId).ifPresent(c -> {
+            c.setStatus(CONTENT_STATUS_PROCESSING);
+            contentRepository.save(c);
+        });
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         ProcessingPipelineOptions pipe = pipeline != null
                 ? pipeline
@@ -98,6 +105,7 @@ public class ProcessingService {
         } catch (Exception e) {
             log.error("Processing failed for content {}", contentId, e);
             failJob(job.getId());
+            markContentFailed(contentId);
         }
     }
 
@@ -111,10 +119,12 @@ public class ProcessingService {
         if (!content.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Content not found");
         }
-        if (!STATUS_PENDING.equals(content.getStatus())) {
+        if (!STATUS_PENDING.equals(content.getStatus()) && !CONTENT_STATUS_FAILED.equals(content.getStatus())) {
             log.debug("start manual pipeline skipped contentId={} status={}", contentId, content.getStatus());
             return;
         }
+        content.setStatus(CONTENT_STATUS_PROCESSING);
+        contentRepository.save(content);
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         ProcessingPipelineOptions pipe = pipeline != null ? pipeline : ProcessingPipelineOptions.defaults();
         ProcessingJob job = createPipelineJob(contentId);
@@ -123,6 +133,7 @@ public class ProcessingService {
         } catch (Exception e) {
             log.error("Manual processing failed for content {}", contentId, e);
             failJob(job.getId());
+            markContentFailed(contentId);
         }
     }
 
@@ -156,6 +167,7 @@ public class ProcessingService {
         } catch (Exception e) {
             log.error("Queued processing failed for content {}", content.getId(), e);
             failJob(job.getId());
+            markContentFailed(content.getId());
         }
     }
 
@@ -191,10 +203,13 @@ public class ProcessingService {
 
         updateJobStep(jobId, "SUMMARY");
         if (pipeline.summarize()) {
-            String summaryText = aiService.summarize(cleanedText, opts);
-            saveSummary(contentId, summaryText, lang);
+            var titleAndSummary = aiService.summarizeWithTitle(cleanedText, opts);
+            saveSummary(contentId, titleAndSummary.summary(), lang);
+            saveGeneratedTitle(contentId, titleAndSummary.title(), lang);
         } else {
             summaryRepository.deleteByContentId(contentId);
+            String generatedTitle = aiService.generateTitle(cleanedText, opts);
+            saveGeneratedTitle(contentId, generatedTitle, lang);
         }
 
         if (pipeline.detectDuplicates()) {
@@ -237,6 +252,25 @@ public class ProcessingService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         AiCallOptions opts = UserAiPreferences.aiCallOptions(user, content.getLanguage(), acceptLanguageHeader);
+
+        // For already processed items, reuse persisted AI output instead of generating again.
+        if (CONTENT_STATUS_READY.equals(content.getStatus()) || CONTENT_STATUS_CONFIRMED.equals(content.getStatus())) {
+            Summary existing = summaryRepository.findByContentId(contentId).orElse(null);
+            if (existing != null && existing.getSummaryText() != null && !existing.getSummaryText().isBlank()) {
+                String lang = existing.getLanguage() != null && !existing.getLanguage().isBlank()
+                        ? existing.getLanguage()
+                        : opts.responseLanguage();
+                String title = content.getTitle() != null && !content.getTitle().isBlank()
+                        ? content.getTitle()
+                        : (lang.startsWith("es") ? "Captura" : "Capture");
+                return AiPreviewResponse.builder()
+                        .title(title)
+                        .summaryText(existing.getSummaryText())
+                        .language(lang)
+                        .build();
+            }
+        }
+
         String cacheKey = contentId + ":" + opts.previewCacheKey();
         CachedPreview cached = previewCache.get(cacheKey);
         if (cached != null && !isExpired(cached.createdAt())) {
@@ -290,7 +324,8 @@ public class ProcessingService {
             String acceptLanguageHeader,
             String title,
             String summaryText,
-            boolean notificationsEnabled
+            boolean notificationsEnabled,
+            Instant reminderAt
     ) {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("Content not found"));
@@ -304,7 +339,20 @@ public class ProcessingService {
         content.setTitle(title);
         content.setLanguage(resolvedLang);
         content.setNotificationsEnabled(notificationsEnabled);
-        content.setStatus(CONTENT_STATUS_READY);
+        if (notificationsEnabled) {
+            if (reminderAt == null) {
+                throw new IllegalArgumentException("Reminder date-time is required when notifications are enabled");
+            }
+            if (reminderAt.isBefore(Instant.now())) {
+                throw new IllegalArgumentException("Reminder date-time must be in the future");
+            }
+            content.setNotificationReminderAt(reminderAt);
+            content.setReminderNotifiedAt(null);
+        } else {
+            content.setNotificationReminderAt(null);
+            content.setReminderNotifiedAt(null);
+        }
+        content.setStatus(CONTENT_STATUS_CONFIRMED);
         contentRepository.save(content);
 
         saveSummary(contentId, summaryText, resolvedLang);
@@ -520,9 +568,25 @@ public class ProcessingService {
                 .build());
     }
 
+    private void saveGeneratedTitle(UUID contentId, String generatedTitle, String language) {
+        String fallback = language != null && language.startsWith("es") ? "Captura" : "Capture";
+        String resolved = generatedTitle != null && !generatedTitle.isBlank() ? generatedTitle.trim() : fallback;
+        contentRepository.findById(contentId).ifPresent(c -> {
+            c.setTitle(resolved);
+            contentRepository.save(c);
+        });
+    }
+
     private void markContentReady(UUID contentId) {
         contentRepository.findById(contentId).ifPresent(c -> {
             c.setStatus(CONTENT_STATUS_READY);
+            contentRepository.save(c);
+        });
+    }
+
+    private void markContentFailed(UUID contentId) {
+        contentRepository.findById(contentId).ifPresent(c -> {
+            c.setStatus(CONTENT_STATUS_FAILED);
             contentRepository.save(c);
         });
     }

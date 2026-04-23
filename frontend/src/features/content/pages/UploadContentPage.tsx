@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { contentApi } from '../api/content-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
 import type { CreateContentRequest } from '@/shared/types/api'
@@ -17,6 +17,7 @@ const TYPES: CreateContentRequest['type'][] = [
   'AUDIO',
   'DOCUMENT',
 ]
+const CREATE_FOLDER_OPTION = '__create-new-folder__'
 
 function inferContentTypeFromUrl(rawUrl: string): CreateContentRequest['type'] | null {
   const trimmed = rawUrl.trim()
@@ -54,11 +55,19 @@ export function UploadContentPage() {
   const [sourceUrl, setSourceUrl] = useState('')
   const [typeOverridden, setTypeOverridden] = useState(false)
   const [rawContent, setRawContent] = useState('')
+  const [folderId, setFolderId] = useState('')
+  const [creatingFolderInline, setCreatingFolderInline] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [folderError, setFolderError] = useState('')
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   const inferredType = useMemo(() => inferContentTypeFromUrl(sourceUrl), [sourceUrl])
+  const foldersQuery = useQuery({
+    queryKey: ['content-folders'],
+    queryFn: () => contentApi.contentFolders().then((res) => res.data),
+  })
 
   useEffect(() => {
     if (!sourceUrl.trim()) {
@@ -82,6 +91,19 @@ export function UploadContentPage() {
     onError: (err) => setError(getErrorMessage(err)),
   })
 
+  const createFolderMutation = useMutation({
+    mutationFn: (name: string) =>
+      contentApi.contentFolderCreate({ name }).then((res) => res.data),
+    onSuccess: (folder) => {
+      queryClient.invalidateQueries({ queryKey: ['content-folders'] })
+      setFolderId(folder.id)
+      setCreatingFolderInline(false)
+      setNewFolderName('')
+      setFolderError('')
+    },
+    onError: (err) => setFolderError(getErrorMessage(err)),
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -89,6 +111,7 @@ export function UploadContentPage() {
       type,
       ...(sourceUrl.trim() ? { sourceUrl: sourceUrl.trim() } : {}),
       ...(rawContent.trim() ? { rawContent: rawContent.trim() } : {}),
+      ...(folderId ? { folderId } : {}),
     })
   }
 
@@ -129,6 +152,63 @@ export function UploadContentPage() {
                 ))}
               </select>
             </label>
+            <div className="space-y-2">
+              <label className="flex flex-col gap-1 text-[13px] font-medium text-app-muted">
+                {t('captureFolder')}
+                <select
+                  value={creatingFolderInline ? CREATE_FOLDER_OPTION : folderId}
+                  onChange={(e) => {
+                    const nextValue = e.target.value
+                    if (nextValue === CREATE_FOLDER_OPTION) {
+                      setCreatingFolderInline(true)
+                      setFolderId('')
+                      return
+                    }
+                    setCreatingFolderInline(false)
+                    setFolderError('')
+                    setFolderId(nextValue)
+                  }}
+                  className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] p-3 text-sm text-app-text outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-in-out focus:border-[#7C5CFF] focus:shadow-[0_0_0_2px_rgba(124,92,255,0.18)]"
+                >
+                  <option value="">{t('captureFolderNone')}</option>
+                  {(foldersQuery.data ?? []).map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                  <option value={CREATE_FOLDER_OPTION}>{t('captureFolderCreateOption')}</option>
+                </select>
+              </label>
+              {foldersQuery.isError && (
+                <p className="text-xs text-app-error">{getErrorMessage(foldersQuery.error)}</p>
+              )}
+              {creatingFolderInline && (
+                <div className="space-y-2 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0E0E15] p-3">
+                  <label className="flex flex-col gap-1 text-[13px] font-medium text-app-muted">
+                    {t('captureNewFolderLabel')}
+                    <Input
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      placeholder={t('captureNewFolderPlaceholder')}
+                    />
+                  </label>
+                  {folderError && <p className="text-xs text-app-error">{folderError}</p>}
+                  <div className="flex items-center justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!newFolderName.trim() || createFolderMutation.isPending}
+                      onClick={() => {
+                        setFolderError('')
+                        createFolderMutation.mutate(newFolderName.trim())
+                      }}
+                    >
+                      {createFolderMutation.isPending ? t('creating') : t('captureCreateFolder')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             <label className="flex flex-col gap-1 text-[13px] font-medium text-app-muted">
               {t('sourceUrl')}
               <Input

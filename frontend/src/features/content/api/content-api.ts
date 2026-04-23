@@ -1,6 +1,7 @@
 import { apiClient } from '@/shared/utils/api-client'
 import type {
   ContentResponse,
+  ContentFolderResponse,
   SummaryResponse,
   TagResponse,
   CreateContentRequest,
@@ -35,4 +36,13 @@ export const contentApi = {
   /** Run full AI pipeline on a pending capture (202 Accepted). */
   runProcessingPipeline: (contentId: string) =>
     apiClient.post<void>(`/content/${contentId}/process`, {}),
+
+  assignFolder: (contentId: string, folderId: string | null) =>
+    apiClient.patch<ContentResponse>(`/content/${contentId}/folder`, { folderId }),
+
+  contentFolders: () =>
+    apiClient.get<ContentFolderResponse[]>('/content/folders'),
+
+  contentFolderCreate: (body: { name: string }) =>
+    apiClient.post<ContentFolderResponse>('/content/folders', body),
 }

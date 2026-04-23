@@ -72,6 +72,18 @@ public class NotificationService {
                 .build());
     }
 
+    @Transactional
+    public void notifyScheduledContentReminder(UUID userId, UUID contentId) {
+        if (userId == null || contentId == null) {
+            return;
+        }
+        userNotificationRepository.save(UserNotification.builder()
+                .userId(userId)
+                .type(NotificationType.CONTENT_REMINDER)
+                .contentId(contentId)
+                .build());
+    }
+
     @Transactional(readOnly = true)
     public long countUnread(UUID userId) {
         return userNotificationRepository.countByUserIdAndReadAtIsNull(userId);

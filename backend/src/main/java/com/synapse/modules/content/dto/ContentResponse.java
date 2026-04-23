@@ -18,6 +18,9 @@ public class ContentResponse {
     private String language;
     private String title;
     private Boolean notificationsEnabled;
+    private Instant notificationReminderAt;
+    private UUID folderId;
+    private String folderName;
     private String status;
     private Instant uploadedAt;
 }

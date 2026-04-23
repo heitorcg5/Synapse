@@ -2,12 +2,16 @@ package com.synapse.modules.content.service;
 
 import com.synapse.exceptions.ResourceNotFoundException;
 import com.synapse.modules.content.dto.ContentResponse;
+import com.synapse.modules.content.dto.ContentFolderResponse;
+import com.synapse.modules.content.dto.AssignContentFolderRequest;
 import com.synapse.modules.content.dto.CreateContentRequest;
+import com.synapse.modules.content.dto.CreateContentFolderRequest;
 import com.synapse.modules.content.dto.SummaryResponse;
 import com.synapse.modules.content.dto.TagResponse;
 import com.synapse.modules.content.entity.Content;
+import com.synapse.modules.content.entity.ContentFolder;
 import com.synapse.modules.content.entity.ContentTag;
-import com.synapse.modules.content.entity.Tag;
+import com.synapse.modules.content.repository.ContentFolderRepository;
 import com.synapse.modules.content.repository.ContentRepository;
 import com.synapse.modules.content.repository.ContentTagRepository;
 import com.synapse.modules.content.repository.TagRepository;
@@ -16,24 +20,31 @@ import com.synapse.modules.summary.repository.SummaryRepository;
 import com.synapse.modules.user.entity.User;
 import com.synapse.modules.user.repository.UserRepository;
 import com.synapse.modules.user.util.UserAiPreferences;
-import com.synapse.modules.user.util.UserProcessingPreferences;
 import com.synapse.modules.ai.AiCallOptions;
 import com.synapse.modules.processing.ProcessingPipelineOptions;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ContentService {
 
     private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_PROCESSING = "PROCESSING";
+    private static final String STATUS_READY = "READY";
+    private static final String STATUS_FAILED = "FAILED";
 
     private final ContentRepository contentRepository;
+    private final ContentFolderRepository contentFolderRepository;
     private final ContentTagRepository contentTagRepository;
     private final TagRepository tagRepository;
     private final SummaryRepository summaryRepository;
@@ -43,8 +54,13 @@ public class ContentService {
 
     @Transactional
     public ContentResponse create(UUID userId, CreateContentRequest request, String captureLanguage, String acceptLanguageHeader) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
+        UUID folderId = request.getFolderId();
+        if (folderId != null) {
+            contentFolderRepository.findByIdAndUserId(folderId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Folder not found"));
+        }
         String lang = captureLanguage != null && !captureLanguage.isBlank() ? captureLanguage : "en";
         Content content = Content.builder()
                 .userId(userId)
@@ -52,18 +68,15 @@ public class ContentService {
                 .sourceUrl(request.getSourceUrl())
                 .rawContent(request.getRawContent())
                 .language(lang)
+                .folderId(folderId)
                 .status(STATUS_PENDING)
                 .build();
         content = contentRepository.save(content);
-        AiCallOptions opts = UserAiPreferences.aiCallOptions(user, lang, acceptLanguageHeader);
-        ProcessingPipelineOptions pipeline = ProcessingPipelineOptions.fromUser(user);
-        String mode = UserProcessingPreferences.effectiveProcessingMode(user);
-        if ("immediate".equals(mode)) {
-            processingService.processContentAsync(content.getId(), opts, pipeline);
-        } else if ("background".equals(mode)) {
-            processingService.enqueueInboxCapture(content.getId());
-        }
-        return toResponse(content);
+        // Capture-first flow: always land in inbox; processing starts only when user triggers it.
+        Map<UUID, String> folderNames = content.getFolderId() == null
+                ? Map.of()
+                : loadFolderNames(userId, Set.of(content.getFolderId()));
+        return toResponse(content, folderNames);
     }
 
     /**
@@ -75,8 +88,11 @@ public class ContentService {
         if (!content.getUserId().equals(userId)) {
             throw new ResourceNotFoundException("CONTENT_NOT_FOUND", "Content not found");
         }
-        if (!STATUS_PENDING.equals(content.getStatus())) {
-            throw new IllegalArgumentException("Only pending captures can run the processing pipeline");
+        if (STATUS_PROCESSING.equals(content.getStatus())) {
+            throw new IllegalArgumentException("Content is already processing");
+        }
+        if (!STATUS_PENDING.equals(content.getStatus()) && !STATUS_FAILED.equals(content.getStatus())) {
+            throw new IllegalArgumentException("Only pending or failed captures can run the processing pipeline");
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
@@ -92,22 +108,62 @@ public class ContentService {
         if (!content.getUserId().equals(userId)) {
             throw new ResourceNotFoundException("CONTENT_NOT_FOUND", "Content not found");
         }
-        return toResponse(content);
+        Set<UUID> folderIds = content.getFolderId() == null ? Set.of() : Set.of(content.getFolderId());
+        return toResponse(content, loadFolderNames(userId, folderIds));
     }
 
     @Transactional(readOnly = true)
     public List<ContentResponse> listByUser(UUID userId) {
-        return contentRepository.findByUserIdOrderByUploadedAtDesc(userId).stream()
-                .map(this::toResponse)
+        List<Content> rows = contentRepository.findByUserIdOrderByUploadedAtDesc(userId);
+        Map<UUID, String> folderNames = loadFolderNames(
+                userId,
+                rows.stream().map(Content::getFolderId).collect(Collectors.toSet())
+        );
+        return rows.stream()
+                .map(content -> toResponse(content, folderNames))
                 .collect(Collectors.toList());
     }
 
     /** Digital Brain inbox: items awaiting user review / processing. */
     @Transactional(readOnly = true)
     public List<ContentResponse> listInboxPending(UUID userId) {
-        return contentRepository.findByUserIdAndStatusOrderByUploadedAtDesc(userId, STATUS_PENDING).stream()
-                .map(this::toResponse)
+        List<Content> rows = contentRepository.findByUserIdAndStatusInOrderByUploadedAtDesc(
+                userId,
+                List.of(STATUS_PENDING, STATUS_PROCESSING, STATUS_READY, STATUS_FAILED)
+        );
+        Map<UUID, String> folderNames = loadFolderNames(
+                userId,
+                rows.stream().map(Content::getFolderId).collect(Collectors.toSet())
+        );
+        return rows.stream()
+                .map(content -> toResponse(content, folderNames))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContentFolderResponse> listFolders(UUID userId) {
+        return contentFolderRepository.findByUserIdOrderByNameAsc(userId).stream()
+                .map(folder -> ContentFolderResponse.builder()
+                        .id(folder.getId())
+                        .name(folder.getName())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ContentFolderResponse createFolder(UUID userId, CreateContentFolderRequest request) {
+        String name = request.getName() != null ? request.getName().trim() : "";
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("Folder name is required");
+        }
+        ContentFolder saved = contentFolderRepository.save(ContentFolder.builder()
+                .userId(userId)
+                .name(name)
+                .build());
+        return ContentFolderResponse.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .build();
     }
 
     @Transactional
@@ -118,6 +174,30 @@ public class ContentService {
             throw new ResourceNotFoundException("CONTENT_NOT_FOUND", "Content not found");
         }
         contentRepository.delete(content);
+    }
+
+    @Transactional
+    public ContentResponse assignFolder(UUID contentId, UUID userId, AssignContentFolderRequest request) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ResourceNotFoundException("CONTENT_NOT_FOUND", "Content not found"));
+        if (!content.getUserId().equals(userId)) {
+            throw new ResourceNotFoundException("CONTENT_NOT_FOUND", "Content not found");
+        }
+
+        UUID folderId = request.getFolderId();
+        if (folderId != null) {
+            contentFolderRepository.findByIdAndUserId(folderId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Folder not found"));
+            content.setFolderId(folderId);
+        } else {
+            content.setFolderId(null);
+        }
+
+        Content saved = contentRepository.save(content);
+        Map<UUID, String> folderNames = saved.getFolderId() == null
+                ? Map.of()
+                : loadFolderNames(userId, Set.of(saved.getFolderId()));
+        return toResponse(saved, folderNames);
     }
 
     @Transactional(readOnly = true)
@@ -146,7 +226,25 @@ public class ContentService {
                 .collect(Collectors.toList());
     }
 
-    private ContentResponse toResponse(Content content) {
+    private Map<UUID, String> loadFolderNames(UUID userId, Set<UUID> folderIds) {
+        Set<UUID> filtered = folderIds.stream()
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (filtered.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            return contentFolderRepository.findAllById(filtered).stream()
+                    .filter(folder -> userId.equals(folder.getUserId()))
+                    .collect(Collectors.toMap(ContentFolder::getId, ContentFolder::getName));
+        } catch (RuntimeException ex) {
+            // Keep inbox/content listing available even if folder storage is temporarily unavailable.
+            log.warn("Could not resolve content folder names for user {}: {}", userId, ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    private ContentResponse toResponse(Content content, Map<UUID, String> folderNames) {
         return ContentResponse.builder()
                 .id(content.getId())
                 .userId(content.getUserId())
@@ -156,6 +254,9 @@ public class ContentService {
                 .language(content.getLanguage())
                 .title(content.getTitle())
                 .notificationsEnabled(content.getNotificationsEnabled())
+                .notificationReminderAt(content.getNotificationReminderAt())
+                .folderId(content.getFolderId())
+                .folderName(folderNames.get(content.getFolderId()))
                 .status(content.getStatus())
                 .uploadedAt(content.getUploadedAt())
                 .build();

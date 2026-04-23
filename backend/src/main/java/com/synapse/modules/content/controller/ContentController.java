@@ -1,8 +1,11 @@
 package com.synapse.modules.content.controller;
 
 import com.synapse.modules.content.dto.ContentResponse;
+import com.synapse.modules.content.dto.ContentFolderResponse;
 import com.synapse.modules.content.dto.AiPreviewResponse;
+import com.synapse.modules.content.dto.AssignContentFolderRequest;
 import com.synapse.modules.content.dto.CreateContentRequest;
+import com.synapse.modules.content.dto.CreateContentFolderRequest;
 import com.synapse.modules.content.dto.ConfirmContentRequest;
 import com.synapse.modules.content.dto.SummaryResponse;
 import com.synapse.modules.content.dto.TagResponse;
@@ -77,7 +80,8 @@ public class ContentController {
                 acceptLanguage,
                 request.getTitle(),
                 request.getSummaryText(),
-                request.getNotificationsEnabled() != null && request.getNotificationsEnabled()
+                request.getNotificationsEnabled() != null && request.getNotificationsEnabled(),
+                request.getReminderAt()
         );
 
         return ResponseEntity.ok(contentService.getById(id, currentUser.getId()));
@@ -110,6 +114,20 @@ public class ContentController {
         return ResponseEntity.ok(contentService.listByUser(currentUser.getId()));
     }
 
+    @GetMapping("/folders")
+    public ResponseEntity<List<ContentFolderResponse>> listFolders(@CurrentUser User currentUser) {
+        return ResponseEntity.ok(contentService.listFolders(currentUser.getId()));
+    }
+
+    @PostMapping("/folders")
+    public ResponseEntity<ContentFolderResponse> createFolder(
+            @CurrentUser User currentUser,
+            @Valid @RequestBody CreateContentFolderRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(contentService.createFolder(currentUser.getId(), request));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id,
@@ -117,6 +135,15 @@ public class ContentController {
     ) {
         contentService.delete(id, currentUser.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/folder")
+    public ResponseEntity<ContentResponse> assignFolder(
+            @PathVariable UUID id,
+            @CurrentUser User currentUser,
+            @Valid @RequestBody AssignContentFolderRequest request
+    ) {
+        return ResponseEntity.ok(contentService.assignFolder(id, currentUser.getId(), request));
     }
 
     @GetMapping("/{id}/summary")

@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 public class CreateContentRequest {
 
@@ -15,4 +17,7 @@ public class CreateContentRequest {
 
     /** Optional pasted text for frictionless inbox capture (TEXT type recommended). */
     private String rawContent;
+
+    /** Optional folder chosen by user at capture time. */
+    private UUID folderId;
 }

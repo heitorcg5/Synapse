@@ -16,10 +16,16 @@ public interface ContentRepository extends JpaRepository<Content, UUID> {
 
     List<Content> findByUserIdAndStatusOrderByUploadedAtDesc(UUID userId, String status);
 
+    List<Content> findByUserIdAndStatusInOrderByUploadedAtDesc(UUID userId, List<String> statuses);
+
     boolean existsByUserIdAndSourceUrlAndIdNot(UUID userId, String sourceUrl, UUID excludeId);
 
     /** Older duplicate of the same URL for this user (excluding current row). */
     List<Content> findByUserIdAndSourceUrlAndIdNotOrderByUploadedAtAsc(UUID userId, String sourceUrl, UUID id);
 
     List<Content> findByUserIdAndUploadedAtBefore(UUID userId, Instant before);
+
+    List<Content> findTop200ByNotificationsEnabledTrueAndNotificationReminderAtLessThanEqualAndReminderNotifiedAtIsNullOrderByNotificationReminderAtAsc(
+            Instant now
+    );
 }

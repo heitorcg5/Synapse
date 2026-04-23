@@ -87,6 +87,7 @@ export type NotificationTypeName =
   | 'PROCESSING_FINISHED'
   | 'DUPLICATE_DETECTED'
   | 'NEW_CONNECTION'
+  | 'CONTENT_REMINDER'
 
 export interface NotificationItem {
   id: string
@@ -120,6 +121,9 @@ export interface ContentResponse {
   language?: string | null
   title?: string
   notificationsEnabled?: boolean
+  notificationReminderAt?: string | null
+  folderId?: string | null
+  folderName?: string | null
   status: string
   uploadedAt: string
 }
@@ -143,6 +147,13 @@ export interface CreateContentRequest {
   sourceUrl?: string
   /** Optional text pasted at capture time (Digital Brain inbox). */
   rawContent?: string
+  /** Optional folder chosen by the user at capture time. */
+  folderId?: string
+}
+
+export interface ContentFolderResponse {
+  id: string
+  name: string
 }
 
 export interface KnowledgeLinkedNoteResponse {
@@ -219,4 +230,5 @@ export interface ConfirmContentRequest {
   title?: string
   summaryText: string
   notificationsEnabled?: boolean
+  reminderAt?: string
 }

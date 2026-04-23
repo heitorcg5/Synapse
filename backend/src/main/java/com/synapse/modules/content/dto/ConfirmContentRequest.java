@@ -3,6 +3,8 @@ package com.synapse.modules.content.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.time.Instant;
+
 @Data
 public class ConfirmContentRequest {
 
@@ -13,5 +15,8 @@ public class ConfirmContentRequest {
     private String summaryText;
 
     private Boolean notificationsEnabled;
+
+    /** Optional scheduled reminder date-time (required when notificationsEnabled=true). */
+    private Instant reminderAt;
 }
 

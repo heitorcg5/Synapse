@@ -12,7 +12,8 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_contents_user_uploaded_at", columnList = "user_id, uploaded_at"),
                 @Index(name = "idx_contents_user_status_uploaded_at", columnList = "user_id, status, uploaded_at"),
-                @Index(name = "idx_contents_user_source_url", columnList = "user_id, source_url")
+                @Index(name = "idx_contents_user_source_url", columnList = "user_id, source_url"),
+                @Index(name = "idx_contents_user_folder_uploaded_at", columnList = "user_id, folder_id, uploaded_at")
         }
 )
 @Getter
@@ -52,6 +53,15 @@ public class Content {
 
     @Column(name = "notifications_enabled")
     private Boolean notificationsEnabled;
+
+    @Column(name = "notification_reminder_at", columnDefinition = "TIMESTAMPTZ")
+    private Instant notificationReminderAt;
+
+    @Column(name = "reminder_notified_at", columnDefinition = "TIMESTAMPTZ")
+    private Instant reminderNotifiedAt;
+
+    @Column(name = "folder_id")
+    private UUID folderId;
 
     @Column(nullable = false)
     private String status;

@@ -14,7 +14,25 @@ type PanelState = {
   title: string
   summaryText: string
   notificationsEnabled: boolean
+  reminderDate: string
+  reminderTime: string
   confirming: boolean
+}
+
+function toLocalDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+function toLocalTimeInputValue(date: Date): string {
+  return date.toTimeString().slice(0, 5)
+}
+
+function defaultReminderParts() {
+  const when = new Date(Date.now() + 60 * 60 * 1000)
+  return {
+    reminderDate: toLocalDateInputValue(when),
+    reminderTime: toLocalTimeInputValue(when),
+  }
 }
 
 export function AiReviewModal({
@@ -50,6 +68,8 @@ export function AiReviewModal({
         title: '',
         summaryText: '',
         notificationsEnabled: false,
+        reminderDate: '',
+        reminderTime: '',
         confirming: false,
       }))
     )
@@ -120,15 +140,48 @@ export function AiReviewModal({
 
   if (!open) return null
 
-  const confirmPayload: ConfirmContentRequest = {
-    title: activeState?.title ?? '',
-    summaryText: activeState?.summaryText ?? '',
-    notificationsEnabled: activeState?.notificationsEnabled ?? false,
-  }
-
   const handleConfirmCurrent = async () => {
     if (!active || !activeState) return
     if (!activeState.summaryText.trim()) return
+    if (activeState.notificationsEnabled && (!activeState.reminderDate || !activeState.reminderTime)) {
+      setPanelStates((prev) => {
+        const next = [...prev]
+        const st = next[index]
+        if (!st) return prev
+        next[index] = {
+          ...st,
+          previewError: t('notificationsReminderRequired'),
+        }
+        return next
+      })
+      return
+    }
+
+    let reminderAt: string | undefined
+    if (activeState.notificationsEnabled) {
+      const parsed = new Date(`${activeState.reminderDate}T${activeState.reminderTime}`)
+      if (Number.isNaN(parsed.getTime()) || parsed.getTime() <= Date.now()) {
+        setPanelStates((prev) => {
+          const next = [...prev]
+          const st = next[index]
+          if (!st) return prev
+          next[index] = {
+            ...st,
+            previewError: t('notificationsReminderFuture'),
+          }
+          return next
+        })
+        return
+      }
+      reminderAt = parsed.toISOString()
+    }
+
+    const confirmPayload: ConfirmContentRequest = {
+      title: activeState.title ?? '',
+      summaryText: activeState.summaryText ?? '',
+      notificationsEnabled: activeState.notificationsEnabled ?? false,
+      ...(reminderAt ? { reminderAt } : {}),
+    }
 
     setPanelStates((prev) => {
       const next = [...prev]
@@ -259,13 +312,63 @@ export function AiReviewModal({
                             const next = [...prev]
                             const st = next[i]
                             if (!st) return prev
-                            next[i] = { ...st, notificationsEnabled: v }
+                            if (!v) {
+                              next[i] = { ...st, notificationsEnabled: false, reminderDate: '', reminderTime: '' }
+                              return next
+                            }
+                            const defaults = defaultReminderParts()
+                            next[i] = {
+                              ...st,
+                              notificationsEnabled: true,
+                              reminderDate: st.reminderDate || defaults.reminderDate,
+                              reminderTime: st.reminderTime || defaults.reminderTime,
+                            }
                             return next
                           })
                         }}
                       />
                       <span>{t('notificationsEnabled')}</span>
                     </label>
+                    {panelStates[i]?.notificationsEnabled && (
+                      <div style={styles.dateTimeGrid}>
+                        <label style={styles.labelTight}>
+                          {t('notificationsReminderDate')}
+                          <Input
+                            type="date"
+                            value={panelStates[i]?.reminderDate ?? ''}
+                            disabled={panelStates[i]?.confirming}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              setPanelStates((prev) => {
+                                const next = [...prev]
+                                const st = next[i]
+                                if (!st) return prev
+                                next[i] = { ...st, reminderDate: v }
+                                return next
+                              })
+                            }}
+                          />
+                        </label>
+                        <label style={styles.labelTight}>
+                          {t('notificationsReminderTime')}
+                          <Input
+                            type="time"
+                            value={panelStates[i]?.reminderTime ?? ''}
+                            disabled={panelStates[i]?.confirming}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              setPanelStates((prev) => {
+                                const next = [...prev]
+                                const st = next[i]
+                                if (!st) return prev
+                                next[i] = { ...st, reminderTime: v }
+                                return next
+                              })
+                            }}
+                          />
+                        </label>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -365,6 +468,19 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: '0.25rem',
     color: 'var(--text-muted)',
     fontSize: '0.9rem',
+  },
+  dateTimeGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.75rem',
+    marginTop: '0.6rem',
+  },
+  labelTight: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem',
+    color: 'var(--text-muted)',
+    fontSize: '0.84rem',
   },
   footerActions: {
     display: 'flex',
