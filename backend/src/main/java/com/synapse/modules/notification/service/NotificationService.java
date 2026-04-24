@@ -113,6 +113,11 @@ public class NotificationService {
         return userNotificationRepository.markAllReadForUser(userId, Instant.now());
     }
 
+    @Transactional
+    public int clearAll(UUID userId) {
+        return userNotificationRepository.deleteAllForUser(userId);
+    }
+
     private NotificationResponse toResponse(UserNotification n) {
         return NotificationResponse.builder()
                 .id(n.getId())

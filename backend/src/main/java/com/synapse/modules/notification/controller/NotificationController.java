@@ -8,8 +8,10 @@ import com.synapse.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,6 +47,18 @@ public class NotificationController {
     @PatchMapping("/read-all")
     public ResponseEntity<Void> markAllRead(@CurrentUser User currentUser) {
         notificationService.markAllRead(currentUser.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> clearAll(@CurrentUser User currentUser) {
+        notificationService.clearAll(currentUser.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/clear")
+    public ResponseEntity<Void> clearAllPost(@CurrentUser User currentUser) {
+        notificationService.clearAll(currentUser.getId());
         return ResponseEntity.noContent().build();
     }
 }

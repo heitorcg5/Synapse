@@ -1,0 +1,108 @@
+.ai-review-picker-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0f0f16;
+  color: #e5e7eb;
+  font-size: 14px;
+  padding: 0 12px 0 34px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.ai-review-picker-input:focus {
+  border-color: #7c5cff;
+  box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+}
+
+.ai-review-popper {
+  z-index: 80 !important;
+}
+
+.ai-review-time-popper {
+  width: min(280px, calc(100vw - 2rem)) !important;
+}
+
+.ai-review-time-popper .react-datepicker {
+  width: 100% !important;
+}
+
+.ai-review-calendar {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  background: #111118 !important;
+  color: #e5e7eb !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden;
+}
+
+.ai-review-calendar.react-datepicker--time-only {
+  min-width: 100%;
+}
+
+.ai-review-calendar .react-datepicker__header {
+  background: #151521 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.ai-review-calendar .react-datepicker__current-month,
+.ai-review-calendar .react-datepicker-time__header,
+.ai-review-calendar .react-datepicker__day-name,
+.ai-review-calendar .react-datepicker__day,
+.ai-review-calendar .react-datepicker__time-name {
+  color: #e5e7eb !important;
+}
+
+.ai-review-calendar .react-datepicker__day:hover,
+.ai-review-calendar .react-datepicker__time-list-item:hover {
+  background: rgba(124, 92, 255, 0.16) !important;
+}
+
+.ai-review-calendar .react-datepicker__time-container,
+.ai-review-calendar .react-datepicker__time,
+.ai-review-calendar .react-datepicker__time-box,
+.ai-review-calendar .react-datepicker__time-list {
+  background: #111118 !important;
+  border-left: none !important;
+}
+
+.ai-review-calendar .react-datepicker__time-container {
+  width: 100% !important;
+}
+
+.ai-review-calendar .react-datepicker-time__header {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #c8cbe2 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 10px 6px !important;
+}
+
+.ai-review-calendar .react-datepicker__time-list-item {
+  color: #d9ddf4 !important;
+  font-size: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  padding: 10px 10px !important;
+}
+
+.ai-review-calendar .react-datepicker__time-box,
+.ai-review-calendar .react-datepicker__time-list {
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.ai-review-calendar .react-datepicker__day--selected,
+.ai-review-calendar .react-datepicker__day--keyboard-selected,
+.ai-review-calendar .react-datepicker__time-list-item--selected {
+  background: #7c5cff !important;
+  color: #fff !important;
+}
+
+.ai-review-calendar .react-datepicker__triangle {
+  display: none;
+}

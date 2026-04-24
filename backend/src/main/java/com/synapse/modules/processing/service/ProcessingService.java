@@ -360,7 +360,10 @@ public class ProcessingService {
 
         String body = content.getRawContent() != null && !content.getRawContent().isBlank()
                 ? content.getRawContent()
-                : summaryText;
+                : analysisResultRepository.findByContentId(contentId)
+                        .map(AnalysisResult::getRawText)
+                        .filter(text -> text != null && !text.isBlank())
+                        .orElse(summaryText);
         knowledgeService.upsertFromInboxConfirmation(
                 userId,
                 contentId,

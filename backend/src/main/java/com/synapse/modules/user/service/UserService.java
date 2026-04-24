@@ -50,18 +50,19 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
                 .orElseThrow(() -> new com.synapse.exceptions.ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
         return toResponse(user);
     }
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new IllegalArgumentException("Email already registered");
         }
         User user = User.builder()
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .build();
         user = userRepository.save(user);
@@ -357,5 +358,12 @@ public class UserService {
                 .hasAvatar(hasAvatar)
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    private static String normalizeEmail(String email) {
+        if (email == null) {
+            return "";
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Calendar, Folder, Tag, Video } from 'lucide-react'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
+import { contentApi } from '@/features/content/api/content-api'
+import { Badge } from '@/shared/components/ui/Badge'
+import { MetadataSidePanel } from '@/shared/components/ui/MetadataSidePanel'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
 import { brainApi } from '../api/brain-api'
+import { ContentPreview } from '../components/ContentPreview'
 import { KnowledgeDownloadDialog } from '../components/KnowledgeDownloadDialog'
 import type { KnowledgeExportFormat, KnowledgeItemResponse } from '@/shared/types/api'
 import { normalizeKnowledgeExportFormat } from '@/shared/types/api'
@@ -40,8 +45,8 @@ export function KnowledgeDetailPage() {
     [profile?.dateFormat, profile?.timeFormat, effectiveTimezone],
   )
   const { data: folders } = useQuery({
-    queryKey: ['knowledge-folders', token ?? ''] as const,
-    queryFn: () => brainApi.knowledgeFolders().then((r) => r.data),
+    queryKey: ['content-folders', token ?? ''] as const,
+    queryFn: () => contentApi.contentFolders().then((r) => r.data),
     enabled: !!token,
   })
 
@@ -58,6 +63,7 @@ export function KnowledgeDetailPage() {
   const [downloadOpen, setDownloadOpen] = useState(false)
   const [downloadBusy, setDownloadBusy] = useState(false)
   const [downloadErr, setDownloadErr] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
 
   const { data: k, isLoading, error } = useQuery({
     queryKey: ['knowledge-item', id],
@@ -75,6 +81,11 @@ export function KnowledgeDetailPage() {
       }
       return undefined
     },
+  })
+  const { data: sourceContent } = useQuery({
+    queryKey: ['content-item', k?.inboxItemId ?? ''],
+    queryFn: () => contentApi.getById(k!.inboxItemId).then((r) => r.data),
+    enabled: !!k?.inboxItemId,
   })
 
   if (!id) return null
@@ -127,6 +138,72 @@ export function KnowledgeDetailPage() {
     !!captureIso &&
     !!savedIso &&
     String(captureIso) !== String(savedIso)
+  const metadataItems = [
+    {
+      label: t('knowledge.capturedAt'),
+      icon: <Calendar size={16} />,
+      value: primaryIso
+        ? formatUserDateTime(primaryIso, i18n.language, formatPrefs)
+        : '—',
+    },
+    ...(k.sourceContentType
+      ? [{ label: t('knowledge.sourceType'), icon: <Video size={16} />, value: typeLabel ?? k.sourceContentType }]
+      : []),
+    ...(showSavedRow
+      ? [
+          {
+            label: t('knowledge.knowledgeRowCreated'),
+            value: formatUserDateTime(savedIso!, i18n.language, formatPrefs),
+          },
+        ]
+      : []),
+    {
+      label: t('knowledge.folderColumn'),
+      icon: <Folder size={16} />,
+      value: (
+        <select
+          value={k.folderId ?? ''}
+          disabled={assignFolderMutation.isPending}
+          onChange={(e) => {
+            const v = e.target.value
+            assignFolderMutation.mutate(v === '' ? null : v)
+          }}
+          style={styles.folderSelect}
+        >
+          <option value="">{t('knowledge.uncategorized')}</option>
+          {(folders ?? []).map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      ),
+    },
+    {
+      label: t('tags'),
+      icon: <Tag size={16} />,
+      value:
+        k.tags && k.tags.length > 0 ? (
+          <div style={styles.tagsWrap}>
+            {k.tags.map((tag) => (
+              <Badge key={tag} className="inline-flex rounded-[999px] border border-[rgba(124,92,255,0.25)] bg-[rgba(124,92,255,0.12)] px-[10px] py-1 text-[12px] font-medium normal-case tracking-normal text-[#d7ceff]">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          '—'
+        ),
+    },
+  ]
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const query = window.matchMedia('(max-width: 900px)')
+    const sync = () => setIsMobile(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
 
   return (
     <div>
@@ -138,111 +215,95 @@ export function KnowledgeDetailPage() {
       <div style={styles.card}>
         <div style={styles.titleRow}>
           <h1 style={styles.title}>{k.title || t('untitledNote')}</h1>
-          <button
-            type="button"
-            style={styles.downloadBtn}
-            onClick={() => {
-              setDownloadErr(null)
-              setDownloadOpen(true)
-            }}
-          >
-            {t('knowledge.download')}
-          </button>
         </div>
-        <p style={styles.metaLine}>
-          <strong>{t('knowledge.capturedAt')}:</strong>{' '}
-          {primaryIso
-            ? formatUserDateTime(primaryIso, i18n.language, formatPrefs)
-            : '—'}
-          {k.sourceContentType ? (
-            <>
-              {' · '}
-              <strong>{t('knowledge.sourceType')}:</strong> {typeLabel}
-            </>
-          ) : null}
-        </p>
-        {showSavedRow ? (
-          <p style={styles.metaLineSecondary}>
-            <strong>{t('knowledge.knowledgeRowCreated')}:</strong>{' '}
-            {formatUserDateTime(savedIso!, i18n.language, formatPrefs)}
-          </p>
-        ) : null}
-        {k.tags && k.tags.length > 0 && (
-          <p style={styles.tags}>
-            <strong>{t('tags')}:</strong> {k.tags.join(', ')}
-          </p>
-        )}
-        <label style={styles.folderRow}>
-          <span style={styles.folderLabel}>{t('knowledge.folderColumn')}</span>
-          <select
-            value={k.folderId ?? ''}
-            disabled={assignFolderMutation.isPending}
-            onChange={(e) => {
-              const v = e.target.value
-              assignFolderMutation.mutate(v === '' ? null : v)
-            }}
-            style={styles.folderSelect}
-          >
-            <option value="">{t('knowledge.uncategorized')}</option>
-            {(folders ?? []).map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p style={styles.folderManage}>
-          <Link to="/settings">{t('settingsPage.title')}</Link>
-        </p>
-        {(k.relatedNotes?.length ?? 0) > 0 && (
-          <>
-            <h2 style={styles.h2}>{t('knowledge.relatedNotes')}</h2>
-            <ul style={styles.linkList}>
-              {(k.relatedNotes ?? []).map((n) => (
-                <li key={n.knowledgeItemId}>
-                  <Link to={`/knowledge/${n.knowledgeItemId}`}>
-                    {n.title || t('untitledNote')}
-                  </Link>
-                  <span style={styles.relMeta}>
-                    {' '}
-                    ({n.relationType}, {n.confidence.toFixed(2)})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        {(k.backlinks?.length ?? 0) > 0 && (
-          <>
-            <h2 style={styles.h2}>{t('knowledge.backlinks')}</h2>
-            <ul style={styles.linkList}>
-              {(k.backlinks ?? []).map((n) => (
-                <li key={n.knowledgeItemId}>
-                  <Link to={`/knowledge/${n.knowledgeItemId}`}>
-                    {n.title || t('untitledNote')}
-                  </Link>
-                  <span style={styles.relMeta}>
-                    {' '}
-                    ({n.relationType}, {n.confidence.toFixed(2)})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        <h2 style={styles.h2}>{t('summary')}</h2>
-        <div style={styles.block}>{k.summary}</div>
-        <h2 style={styles.h2}>{t('knowledgeBody')}</h2>
-        <div style={styles.block}>{k.body}</div>
-        {k.linkedItemIds && k.linkedItemIds.length > 0 && (
-          <p style={styles.meta}>
-            {t('linkedItems')}: {k.linkedItemIds.join(', ')}
-          </p>
-        )}
-        <p style={styles.meta}>
-          <Link to={`/content/${k.inboxItemId}`}>{t('sourceCapture')}</Link>
-        </p>
+        <div style={{ ...styles.layoutGrid, ...(isMobile ? styles.layoutGridMobile : {}) }}>
+          <div style={styles.mainCol}>
+            <ContentPreview
+              contentType={k.sourceContentType}
+              sourceUrl={sourceContent?.sourceUrl}
+              title={k.title}
+            />
+            <h2 style={styles.h2}>{t('summary')}</h2>
+            <div style={styles.summaryBlock}>{k.summary}</div>
+            <h2 style={styles.h2}>{t('knowledgeBody')}</h2>
+            <div style={styles.block}>{k.body}</div>
+            {(k.relatedNotes?.length ?? 0) > 0 && (
+              <>
+                <h2 style={styles.h2}>{t('knowledge.relatedNotes')}</h2>
+                <ul style={styles.linkList}>
+                  {(k.relatedNotes ?? []).map((n) => (
+                    <li key={n.knowledgeItemId}>
+                      <Link to={`/knowledge/${n.knowledgeItemId}`}>
+                        {n.title || t('untitledNote')}
+                      </Link>
+                      <span style={styles.relMeta}>
+                        {' '}
+                        ({n.relationType}, {n.confidence.toFixed(2)})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {(k.backlinks?.length ?? 0) > 0 && (
+              <>
+                <h2 style={styles.h2}>{t('knowledge.backlinks')}</h2>
+                <ul style={styles.linkList}>
+                  {(k.backlinks ?? []).map((n) => (
+                    <li key={n.knowledgeItemId}>
+                      <Link to={`/knowledge/${n.knowledgeItemId}`}>
+                        {n.title || t('untitledNote')}
+                      </Link>
+                      <span style={styles.relMeta}>
+                        {' '}
+                        ({n.relationType}, {n.confidence.toFixed(2)})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {k.linkedItemIds && k.linkedItemIds.length > 0 && (
+              <p style={styles.meta}>
+                {t('linkedItems')}: {k.linkedItemIds.join(', ')}
+              </p>
+            )}
+          </div>
+
+          <MetadataSidePanel
+            title={t('details')}
+            items={metadataItems}
+            footer={
+              <div style={styles.actionsSection}>
+                <button
+                  type="button"
+                  style={styles.actionBtn}
+                  onClick={() => {
+                    setDownloadErr(null)
+                    setDownloadOpen(true)
+                  }}
+                >
+                  Download
+                </button>
+                <Link to={`/content/${k.inboxItemId}`} style={styles.actionBtnLink}>
+                  View original
+                </Link>
+                {sourceContent?.sourceUrl ? (
+                  <a
+                    href={sourceContent.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.actionBtnLink}
+                  >
+                    Open source
+                  </a>
+                ) : null}
+              </div>
+            }
+          />
+        </div>
       </div>
+      
 
       <KnowledgeDownloadDialog
         open={downloadOpen}
@@ -271,15 +332,35 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     border: '1px solid var(--border)',
   },
+  layoutGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+    gap: '2rem',
+  },
+  layoutGridMobile: {
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    gap: '1rem',
+  },
+  mainCol: {
+    minWidth: 0,
+  },
   titleRow: {
     display: 'flex',
     flexWrap: 'wrap',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: '0.75rem',
-    marginBottom: '1rem',
+    marginBottom: 12,
   },
-  title: { fontSize: '1.25rem', fontWeight: 600, margin: 0, flex: '1 1 12rem' },
+  title: {
+    fontSize: 26,
+    fontWeight: 600,
+    lineHeight: 1.3,
+    margin: 0,
+    marginBottom: 12,
+    maxWidth: 800,
+    flex: '1 1 12rem',
+  },
   downloadBtn: {
     flexShrink: 0,
     padding: '0.45rem 0.85rem',
@@ -302,17 +383,25 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'pre-wrap',
     color: 'var(--text)',
   },
+  summaryBlock: {
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    padding: 20,
+    lineHeight: 1.6,
+    fontSize: 15,
+    whiteSpace: 'pre-wrap',
+    color: 'var(--text)',
+    marginBottom: 24,
+  },
   metaLine: { fontSize: '0.875rem', marginBottom: '0.75rem', color: 'var(--text-muted)' },
   metaLineSecondary: { fontSize: '0.8rem', marginBottom: '0.5rem', color: 'var(--text-muted)' },
   tags: { fontSize: '0.875rem', marginBottom: '0.5rem' },
-  folderRow: {
+  tagsWrap: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '0.35rem',
-    marginBottom: '0.5rem',
-    maxWidth: '22rem',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  folderLabel: { fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 },
   folderSelect: {
     padding: '0.5rem',
     borderRadius: 8,
@@ -320,7 +409,38 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--bg)',
     color: 'var(--text)',
   },
-  folderManage: { fontSize: '0.75rem', marginTop: '0.25rem', marginBottom: '0.75rem' },
+  actionsSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  actionBtn: {
+    height: 40,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    border: '1px solid var(--border)',
+    backgroundColor: 'var(--bg)',
+    color: 'var(--text)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    textDecoration: 'none',
+  },
+  actionBtnLink: {
+    height: 40,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    border: '1px solid var(--border)',
+    backgroundColor: 'var(--bg)',
+    color: 'var(--text)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    textDecoration: 'none',
+  },
   linkList: { margin: '0.25rem 0 0', paddingLeft: '1.25rem', lineHeight: 1.6 },
   relMeta: { fontSize: '0.8rem', color: 'var(--text-muted)' },
   meta: { fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem' },

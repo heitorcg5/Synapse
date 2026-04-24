@@ -8,6 +8,7 @@ import { userApi } from '@/features/profile/api/user-api'
 import { notificationsApi } from '../api/notifications-api'
 import type { NotificationItem } from '@/shared/types/api'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
+import { getErrorMessage } from '@/shared/utils/api-client'
 
 const ICON = 22
 
@@ -32,6 +33,7 @@ export function HeaderNotificationsBell() {
   const queryClient = useQueryClient()
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
+  const [clearError, setClearError] = useState('')
 
   const unreadKey = ['notifications-unread', token ?? ''] as const
   const listKey = ['notifications-list', token ?? ''] as const
@@ -76,6 +78,37 @@ export function HeaderNotificationsBell() {
   const markAllMutation = useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: unreadKey })
+      void queryClient.invalidateQueries({ queryKey: listKey })
+    },
+  })
+
+  const clearAllMutation = useMutation({
+    mutationFn: () => notificationsApi.clearAll(),
+    onMutate: async () => {
+      setClearError('')
+      await queryClient.cancelQueries({ queryKey: listKey })
+      await queryClient.cancelQueries({ queryKey: unreadKey })
+      const previousItems = queryClient.getQueryData<NotificationItem[]>(listKey) ?? []
+      const previousUnread = queryClient.getQueryData<{ count: number }>(unreadKey) ?? { count: 0 }
+      queryClient.setQueryData<NotificationItem[]>(listKey, [])
+      queryClient.setQueryData(unreadKey, { count: 0 })
+      return { previousItems, previousUnread }
+    },
+    onError: (err, _vars, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(listKey, context.previousItems)
+      }
+      if (context?.previousUnread) {
+        queryClient.setQueryData(unreadKey, context.previousUnread)
+      }
+      setClearError(getErrorMessage(err))
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: unreadKey })
+      void queryClient.invalidateQueries({ queryKey: listKey })
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: unreadKey })
       void queryClient.invalidateQueries({ queryKey: listKey })
     },
@@ -162,17 +195,30 @@ export function HeaderNotificationsBell() {
         <div style={styles.panel} role="dialog" aria-label={t('notifications.title')}>
           <div style={styles.panelHead}>
             <span style={styles.panelTitle}>{t('notifications.title')}</span>
-            {items.some((n) => !n.read) ? (
-              <button
-                type="button"
-                style={styles.linkish}
-                disabled={markAllMutation.isPending}
-                onClick={() => markAllMutation.mutate()}
-              >
-                {t('notifications.markAllRead')}
-              </button>
-            ) : null}
+            <div style={styles.panelActions}>
+              {items.some((n) => !n.read) ? (
+                <button
+                  type="button"
+                  style={styles.linkish}
+                  disabled={markAllMutation.isPending || clearAllMutation.isPending}
+                  onClick={() => markAllMutation.mutate()}
+                >
+                  {t('notifications.markAllRead')}
+                </button>
+              ) : null}
+              {items.length > 0 ? (
+                <button
+                  type="button"
+                  style={styles.clearBtn}
+                  disabled={markAllMutation.isPending || clearAllMutation.isPending}
+                  onClick={() => clearAllMutation.mutate()}
+                >
+                  {t('notifications.clearAll')}
+                </button>
+              ) : null}
+            </div>
           </div>
+          {clearError ? <p style={styles.errorText}>{clearError}</p> : null}
           {listLoading ? (
             <p style={styles.muted}>{t('loading')}</p>
           ) : items.length === 0 ? (
@@ -278,6 +324,11 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     fontSize: '0.9rem',
   },
+  panelActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.6rem',
+  },
   linkish: {
     border: 'none',
     background: 'none',
@@ -287,6 +338,17 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     textDecoration: 'underline',
+  },
+  clearBtn: {
+    border: '1px solid rgba(248, 113, 113, 0.45)',
+    background: 'rgba(248, 113, 113, 0.12)',
+    color: '#fecaca',
+    padding: '0.2rem 0.55rem',
+    borderRadius: 999,
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
   },
   muted: {
     padding: '1rem',
@@ -328,5 +390,12 @@ const styles: Record<string, CSSProperties> = {
   rowHint: {
     fontSize: '0.72rem',
     color: 'var(--accent)',
+  },
+  errorText: {
+    margin: 0,
+    padding: '0.55rem 0.85rem',
+    fontSize: '0.78rem',
+    color: '#fca5a5',
+    borderBottom: '1px solid var(--border)',
   },
 }

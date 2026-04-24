@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.exceptions.ResourceNotFoundException;
 import com.synapse.modules.content.entity.Content;
+import com.synapse.modules.content.entity.ContentFolder;
 import com.synapse.modules.content.entity.ContentTag;
+import com.synapse.modules.content.repository.ContentFolderRepository;
 import com.synapse.modules.content.repository.ContentRepository;
 import com.synapse.modules.content.repository.ContentTagRepository;
 import com.synapse.modules.content.repository.TagRepository;
@@ -59,6 +61,7 @@ public class KnowledgeService {
     private final KnowledgeLinkingService knowledgeLinkingService;
     private final UserRepository userRepository;
     private final ContentRepository contentRepository;
+    private final ContentFolderRepository contentFolderRepository;
     private final ContentTagRepository contentTagRepository;
     private final TagRepository tagRepository;
     private final ObjectMapper objectMapper;
@@ -135,8 +138,11 @@ public class KnowledgeService {
                 .orElseThrow(() -> new ResourceNotFoundException("KNOWLEDGE_NOT_FOUND", "Knowledge item not found"));
         UUID folderId = req.getFolderId();
         if (folderId != null) {
-            knowledgeFolderRepository.findByIdAndUserId(folderId, userId)
-                    .orElseThrow(() -> new IllegalArgumentException("Folder not found"));
+            boolean existsInKnowledgeFolders = knowledgeFolderRepository.findByIdAndUserId(folderId, userId).isPresent();
+            boolean existsInContentFolders = contentFolderRepository.findByIdAndUserId(folderId, userId).isPresent();
+            if (!existsInKnowledgeFolders && !existsInContentFolders) {
+                throw new IllegalArgumentException("Folder not found");
+            }
             item.setFolderId(folderId);
         } else {
             item.setFolderId(null);
@@ -237,6 +243,9 @@ public class KnowledgeService {
         String lang = language != null && !language.isBlank() ? language : "en";
         String bodyFinal = body != null && !body.isBlank() ? body : summary;
         String ctype = sourceContentType != null && !sourceContentType.isBlank() ? sourceContentType.trim() : null;
+        UUID contentFolderId = contentRepository.findById(inboxItemId)
+                .map(Content::getFolderId)
+                .orElse(null);
 
         KnowledgeItem item = knowledgeItemRepository.findByInboxItemId(inboxItemId).map(existing -> {
             existing.setTitle(title);
@@ -249,6 +258,9 @@ public class KnowledgeService {
             if (existing.getLinkedItemIdsJson() == null || existing.getLinkedItemIdsJson().isBlank()) {
                 existing.setLinkedItemIdsJson("[]");
             }
+            if (existing.getFolderId() == null && contentFolderId != null) {
+                existing.setFolderId(contentFolderId);
+            }
             return knowledgeItemRepository.save(existing);
         }).orElseGet(() -> knowledgeItemRepository.save(KnowledgeItem.builder()
                 .userId(userId)
@@ -258,6 +270,7 @@ public class KnowledgeService {
                 .body(bodyFinal)
                 .language(lang)
                 .sourceContentType(ctype)
+                .folderId(contentFolderId)
                 .linkedItemIdsJson("[]")
                 .build()));
 
@@ -289,6 +302,11 @@ public class KnowledgeService {
             folderName = knowledgeFolderRepository.findByIdAndUserId(k.getFolderId(), userId)
                     .map(KnowledgeFolder::getName)
                     .orElse(null);
+            if (folderName == null) {
+                folderName = contentFolderRepository.findByIdAndUserId(k.getFolderId(), userId)
+                        .map(ContentFolder::getName)
+                        .orElse(null);
+            }
         }
         var builder = KnowledgeItemResponse.builder()
                 .id(k.getId())

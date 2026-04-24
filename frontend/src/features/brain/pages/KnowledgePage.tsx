@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { ChevronRight, Folder, FolderOpen, SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
@@ -16,10 +17,10 @@ import type {
 } from '@/shared/types/api'
 import { normalizeKnowledgeExportFormat } from '@/shared/types/api'
 import { brainApi, type KnowledgeListParams } from '../api/brain-api'
+import { contentApi } from '@/features/content/api/content-api'
 import { KnowledgeDownloadDialog, type KnowledgeDownloadMode } from '../components/KnowledgeDownloadDialog'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
-
-type KnowledgeStyle = 'tags' | 'folders' | 'graph'
+import { FolderItem } from '@/shared/components/ui/FolderItem'
 
 export function KnowledgePage() {
   const { t, i18n } = useTranslation()
@@ -29,19 +30,15 @@ export function KnowledgePage() {
   const [tag, setTag] = useState('')
   const [type, setType] = useState('')
   const [sort, setSort] = useState<'desc' | 'asc'>('desc')
-  const [folderFocus, setFolderFocus] = useState<string | 'all' | 'none'>('all')
+  const [folderFocus, setFolderFocus] = useState<string | 'all'>('all')
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const { data: profile } = useQuery({
     queryKey: ['user-profile', token ?? ''] as const,
     queryFn: () => userApi.getMe().then((r) => r.data),
     enabled: !!token,
   })
-
-  const knowledgeStyle = useMemo((): KnowledgeStyle => {
-    const s = profile?.knowledgeStyle?.toLowerCase()
-    if (s === 'folders' || s === 'graph') return s
-    return 'tags'
-  }, [profile?.knowledgeStyle])
 
   const effectiveTimezone = useMemo(() => {
     const z = profile?.preferredTimezone?.trim()
@@ -80,16 +77,12 @@ export function KnowledgePage() {
   })
 
   const { data: folders } = useQuery({
-    queryKey: ['knowledge-folders', token ?? ''] as const,
-    queryFn: () => brainApi.knowledgeFolders().then((r) => r.data),
-    enabled: !!token && knowledgeStyle === 'folders',
-  })
-
-  const { data: graph } = useQuery({
-    queryKey: ['knowledge-graph', token ?? ''] as const,
-    queryFn: () => brainApi.knowledgeGraph().then((r) => r.data),
-    enabled: !!token && knowledgeStyle === 'graph',
-    refetchInterval: 15_000,
+    queryKey: ['content-folders', token ?? ''] as const,
+    queryFn: () =>
+      contentApi
+        .contentFolders()
+        .then((r) => r.data.map((f) => ({ id: f.id, parentId: null, name: f.name }))),
+    enabled: !!token,
   })
 
   const { data: items, isPending, isError, error } = useQuery({
@@ -150,11 +143,9 @@ export function KnowledgePage() {
   }
 
   const filteredForFolder = useMemo(() => {
-    if (knowledgeStyle !== 'folders') return list
     if (folderFocus === 'all') return list
-    if (folderFocus === 'none') return list.filter((k) => !k.folderId)
     return list.filter((k) => k.folderId === folderFocus)
-  }, [knowledgeStyle, list, folderFocus])
+  }, [list, folderFocus])
 
   const groupedByFolder = useMemo(() => {
     const m = new Map<string | null, KnowledgeItemResponse[]>()
@@ -166,6 +157,51 @@ export function KnowledgePage() {
     }
     return m
   }, [list])
+
+  const folderChildren = useMemo(() => {
+    const map = new Map<string | null, KnowledgeFolderResponse[]>()
+    for (const folder of folders ?? []) {
+      const parentKey = folder.parentId ?? null
+      const arr = map.get(parentKey) ?? []
+      arr.push(folder)
+      map.set(parentKey, arr)
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return map
+  }, [folders])
+
+  const folderById = useMemo(() => {
+    const map = new Map<string, KnowledgeFolderResponse>()
+    for (const folder of folders ?? []) {
+      map.set(folder.id, folder)
+    }
+    return map
+  }, [folders])
+
+  const breadcrumbFolders = useMemo(() => {
+    if (folderFocus === 'all') return []
+    const chain: KnowledgeFolderResponse[] = []
+    let cursor = folderById.get(folderFocus)
+    while (cursor) {
+      chain.unshift(cursor)
+      cursor = cursor.parentId ? folderById.get(cursor.parentId) : undefined
+    }
+    return chain
+  }, [folderById, folderFocus])
+
+  const toggleExpanded = (folderId: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev)
+      if (next.has(folderId)) {
+        next.delete(folderId)
+      } else {
+        next.add(folderId)
+      }
+      return next
+    })
+  }
 
   const clearFilters = () => {
     setFrom('')
@@ -218,15 +254,11 @@ export function KnowledgePage() {
               </>
             ) : null}
           </span>
-          {knowledgeStyle === 'folders' ? (
-            <span className="text-[0.8rem] text-app-muted">
-              <strong>{t('knowledge.folderColumn')}:</strong> {k.folderName || t('knowledge.uncategorized')}
-              {' · '}
-              <strong>{t('tags')}:</strong> {k.tags?.length ? k.tags.join(', ') : '—'}
-            </span>
-          ) : (
-            <span className="text-[0.8rem] text-app-muted">{k.tags?.length ? k.tags.join(', ') : '—'}</span>
-          )}
+          <span className="text-[0.8rem] text-app-muted">
+            <strong>{t('knowledge.folderColumn')}:</strong> {k.folderName || t('knowledge.uncategorized')}
+            {' · '}
+            <strong>{t('tags')}:</strong> {k.tags?.length ? k.tags.join(', ') : '—'}
+          </span>
         </Link>
         <button
           type="button"
@@ -242,95 +274,60 @@ export function KnowledgePage() {
     </li>
   )
 
-  const folderSidebar = (flat: KnowledgeFolderResponse[]) => {
-    const row = (id: string | 'all' | 'none', label: string, count?: number) => (
-      <button
-        key={String(id)}
-        type="button"
-        onClick={() => setFolderFocus(id)}
-        className={
-          folderFocus === id
-            ? 'rounded-md border border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.10)] px-2 py-1 text-left text-[0.85rem] text-app-text'
-            : 'rounded-md border border-transparent bg-transparent px-2 py-1 text-left text-[0.85rem] text-app-text transition-colors hover:bg-white/5'
-        }
-      >
-        {label}
-        {count != null ? ` (${count})` : ''}
-      </button>
-    )
-    const noneCount = groupedByFolder.get(null)?.length ?? 0
-    return (
-      <div className="flex flex-col gap-[0.35rem] rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-3">
-        <p className="m-0 mb-1 text-[0.75rem] font-semibold text-app-muted">{t('knowledge.folderColumn')}</p>
-        {row('all', t('knowledge.allItems'), list.length)}
-        {row('none', t('knowledge.uncategorized'), noneCount)}
-        {flat.map((f) =>
-          row(f.id, f.name, groupedByFolder.get(f.id)?.length ?? 0),
-        )}
-        <p className="mb-0 mt-2 text-[0.75rem]">
-          <Link to="/settings">{t('settingsPage.title')}</Link>
-        </p>
-      </div>
-    )
+  const renderFolderTree = (parentId: string | null, level: number) => {
+    const rows = folderChildren.get(parentId) ?? []
+    return rows.map((folder) => {
+      const children = folderChildren.get(folder.id) ?? []
+      const hasChildren = children.length > 0
+      const expanded = expandedFolders.has(folder.id)
+      const isActive = folderFocus === folder.id
+      return (
+        <div key={folder.id} className="space-y-2">
+          <div
+            className="flex items-center gap-2"
+            style={{ paddingLeft: `${level * 16}px` }}
+          >
+            <button
+              type="button"
+              aria-label={expanded ? 'Collapse folder' : 'Expand folder'}
+              onClick={() => hasChildren && toggleExpanded(folder.id)}
+              className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[#8A8FA0] transition-colors duration-150 hover:bg-white/5 hover:text-[#B7BDCC]"
+            >
+              {hasChildren ? (
+                <ChevronRight
+                  size={14}
+                  className={`transition-transform duration-200 ease-in-out ${expanded ? 'rotate-90' : ''}`}
+                />
+              ) : (
+                <span className="h-[14px] w-[14px]" />
+              )}
+            </button>
+            <FolderItem
+              icon={expanded ? <FolderOpen size={14} /> : <Folder size={14} />}
+              name={folder.name}
+              count={groupedByFolder.get(folder.id)?.length ?? 0}
+              active={isActive}
+              onClick={() => setFolderFocus(folder.id)}
+              className="border border-transparent"
+            />
+          </div>
+          <div
+            className="grid transition-[grid-template-rows,opacity] duration-200 ease-in-out"
+            style={{
+              gridTemplateRows: hasChildren && expanded ? '1fr' : '0fr',
+              opacity: hasChildren && expanded ? 1 : 0.65,
+            }}
+          >
+            <div className="overflow-hidden">{hasChildren ? renderFolderTree(folder.id, level + 1) : null}</div>
+          </div>
+        </div>
+      )
+    })
   }
 
-  const graphBody =
-    knowledgeStyle === 'graph' && graph ? (
-      <ul className="flex list-none flex-col gap-2">
-        {graph.nodes.map((n) => {
-          const edges = graph.edges.filter((e) => e.sourceItemId === n.id)
-          return (
-            <li key={n.id} className="overflow-hidden rounded-lg border border-[var(--border)]">
-              <div className="flex items-stretch">
-                <div className="min-w-0 flex-1 p-4">
-                  <Link to={`/knowledge/${n.id}`} className="font-semibold text-app-text no-underline">
-                    {n.title || t('untitledNote')}
-                  </Link>
-                  {edges.length > 0 && (
-                    <ul className="m-0 ml-4 mt-2 list-disc p-0">
-                      {edges.map((e) => {
-                        const target = graph.nodes.find((x) => x.id === e.targetItemId)
-                        return (
-                          <li key={`${e.sourceItemId}-${e.targetItemId}`} className="text-[0.85rem]">
-                            <Link to={`/knowledge/${e.targetItemId}`}>
-                              {target?.title || t('untitledNote')}
-                            </Link>
-                            <span className="text-app-muted">
-                              {' '}
-                              ({e.relationType})
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="shrink-0 self-stretch border-l border-[var(--border)] bg-[var(--surface)] px-[0.85rem] text-[0.8125rem] font-semibold text-brand-purple transition-all duration-150 ease-in-out hover:-translate-y-px"
-                  onClick={() => {
-                    setDownloadErr(null)
-                    setDownloadMode({ type: 'single', itemId: n.id, title: n.title })
-                  }}
-                >
-                  {t('knowledge.download')}
-                </button>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    ) : null
+  const listToShow = filteredForFolder
 
-  const listToShow =
-    knowledgeStyle === 'folders'
-      ? filteredForFolder
-      : knowledgeStyle === 'graph'
-        ? []
-        : list
-
-  const showDownloadAll =
-    list.length > 0 || (knowledgeStyle === 'graph' && (graph?.nodes.length ?? 0) > 0)
+  const showDownloadAll = list.length > 0
 
   return (
     <div className="w-full max-w-full">
@@ -352,9 +349,6 @@ export function KnowledgePage() {
         ) : null}
       </div>
       <p className="mb-4 text-[15px] text-[#9CA3AF]">{t('knowledgeSubtitle')}</p>
-      {knowledgeStyle !== 'tags' && (
-        <p className="mb-4 text-[0.85rem] text-[#9CA3AF]">{t('knowledge.layoutFromSettings')}</p>
-      )}
 
       {facetsError ? (
         <div className="mb-3 text-[0.875rem] text-app-error">
@@ -365,14 +359,25 @@ export function KnowledgePage() {
         </div>
       ) : null}
 
-      {knowledgeStyle !== 'graph' && (
+      <div className="mb-4 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[0.82rem] font-medium text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px hover:bg-white/5"
+        >
+          <SlidersHorizontal size={15} />
+          {t('knowledge.filtersButton')}
+        </button>
+      </div>
+
+      {filtersOpen && (
         <SurfaceContainer className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] items-end gap-x-4 gap-y-3 p-4">
           <label className="flex min-w-0 flex-col gap-[0.35rem]">
             <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.sortByDate')}</span>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as 'desc' | 'asc')}
-              className="min-h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 text-[0.875rem] leading-[1.25] text-app-text"
+              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
             >
               <option value="desc">{t('knowledge.sortNewestFirst')}</option>
               <option value="asc">{t('knowledge.sortOldestFirst')}</option>
@@ -384,7 +389,7 @@ export function KnowledgePage() {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="min-h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-[0.625rem] text-[0.875rem] leading-[1.25] text-app-text"
+              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
             />
           </label>
           <label className="flex min-w-0 flex-col gap-[0.35rem]">
@@ -393,7 +398,7 @@ export function KnowledgePage() {
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="min-h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-[0.625rem] text-[0.875rem] leading-[1.25] text-app-text"
+              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
             />
           </label>
           <label className="flex min-w-0 flex-col gap-[0.35rem]">
@@ -401,7 +406,7 @@ export function KnowledgePage() {
             <select
               value={tag}
               onChange={(e) => setTag(e.target.value)}
-              className="min-h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 text-[0.875rem] leading-[1.25] text-app-text"
+              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
             >
               <option value="">{t('knowledge.filterAllTags')}</option>
               {(facets?.tags ?? []).map((name) => (
@@ -416,7 +421,7 @@ export function KnowledgePage() {
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="min-h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 text-[0.875rem] leading-[1.25] text-app-text"
+              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
             >
               <option value="">{t('knowledge.filterAllTypes')}</option>
               {(facets?.types ?? []).map((ty) => (
@@ -431,7 +436,7 @@ export function KnowledgePage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="min-h-10 whitespace-nowrap rounded-lg border border-[var(--border)] bg-transparent px-[0.875rem] text-[0.8125rem] font-medium text-app-muted transition-all duration-150 ease-in-out hover:-translate-y-px"
+                className="h-11 whitespace-nowrap rounded-[10px] border border-[var(--border)] bg-transparent px-[0.875rem] text-[0.8125rem] font-medium text-app-muted transition-all duration-150 ease-in-out hover:-translate-y-px"
               >
                 {t('knowledge.clearFilters')}
               </button>
@@ -440,10 +445,52 @@ export function KnowledgePage() {
         </SurfaceContainer>
       )}
 
-      {knowledgeStyle === 'folders' && folders && (
-        <SurfaceContainer className="grid grid-cols-[minmax(11rem,14rem)_1fr] items-start gap-4">
-          {folderSidebar(folders)}
+      {folders && (
+        <SurfaceContainer className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-5">
+          <aside className="rounded-[14px] border border-white/[0.06] bg-[#0f0f16] p-3">
+            <p className="mb-2 px-2 text-[0.74rem] font-semibold uppercase tracking-wide text-[#8F95A6]">
+              {t('knowledge.folderColumn')}
+            </p>
+            <div className="space-y-2">
+              <FolderItem
+                icon={<Folder size={14} />}
+                name={t('knowledge.allFolder')}
+                count={list.length}
+                active={folderFocus === 'all'}
+                onClick={() => setFolderFocus('all')}
+                className="border border-transparent"
+              />
+              {renderFolderTree(null, 0)}
+            </div>
+            <p className="mb-0 mt-3 px-2 text-[0.75rem] text-[#8F95A6]">
+              <Link to="/settings">{t('settingsPage.title')}</Link>
+            </p>
+          </aside>
           <div className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFolderFocus('all')}
+                className={folderFocus === 'all' ? 'text-sm text-white' : 'text-sm text-[#9CA3AF] transition-colors hover:text-white'}
+              >
+                {t('nav.knowledge')}
+              </button>
+              {breadcrumbFolders.map((crumb, idx) => {
+                const isActive = idx === breadcrumbFolders.length - 1
+                return (
+                  <div key={crumb.id} className="flex items-center gap-2">
+                    <ChevronRight size={14} className="text-[#9CA3AF]" />
+                    <button
+                      type="button"
+                      onClick={() => setFolderFocus(crumb.id)}
+                      className={isActive ? 'text-sm text-white' : 'text-sm text-[#9CA3AF] transition-colors hover:text-white'}
+                    >
+                      {crumb.name}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
             {listToShow.length === 0 ? (
               <div className="p-8 text-center text-app-muted">
                 <p>{hasActiveFilters ? t('knowledge.emptyFiltered') : t('knowledgeEmpty')}</p>
@@ -453,35 +500,6 @@ export function KnowledgePage() {
             )}
           </div>
         </SurfaceContainer>
-      )}
-
-      {knowledgeStyle === 'graph' && (
-        <>
-          {!graph ? (
-            <p className="text-app-muted">{t('loading')}</p>
-          ) : graph.nodes.length === 0 ? (
-            <SurfaceContainer className="text-center text-app-muted">
-              <p>{t('knowledgeEmpty')}</p>
-            </SurfaceContainer>
-          ) : (
-            <SurfaceContainer>{graphBody}</SurfaceContainer>
-          )}
-        </>
-      )}
-
-      {knowledgeStyle === 'tags' && (
-        <>
-          {list.length === 0 ? (
-            <SurfaceContainer className="text-center text-app-muted">
-              <p>{hasActiveFilters ? t('knowledge.emptyFiltered') : t('knowledgeEmpty')}</p>
-              {!hasActiveFilters && <Link to="/inbox">{t('nav.inbox')}</Link>}
-            </SurfaceContainer>
-          ) : (
-            <SurfaceContainer>
-              <ul className="flex list-none flex-col gap-2">{list.map(renderItemRow)}</ul>
-            </SurfaceContainer>
-          )}
-        </>
       )}
 
       <KnowledgeDownloadDialog

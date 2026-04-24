@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -46,8 +48,11 @@ public class OllamaProvider implements AiService {
                     + "If the Content is only a video title, channel name, and link with no transcript or description, "
                     + "infer the likely real-world topic from the title and channel only—keep the summary concrete and "
                     + "specific to that topic; do not explain how YouTube works as a product.\n"
-                    + "Reply ONLY in this format:\nTITLE: [3-8 word title]\n\nSUMMARY: [your summary]\nNo preamble. "
+                    + "Reply ONLY in this format:\nTITLE: [3-8 word title]\n\nSUMMARY: [your summary text only, no label repeats]\nNo preamble. "
                     + "Reply in %s.";
+    private static final Pattern SUMMARY_SPLIT_PATTERN = Pattern.compile("(?is)\\b(?:summary|resumen)\\s*:\\s*");
+    private static final Pattern TITLE_PREFIX_PATTERN = Pattern.compile("(?is)^\\s*(?:title|titulo|título)\\s*:\\s*");
+    private static final Pattern SUMMARY_PREFIX_PATTERN = Pattern.compile("(?is)^\\s*(?:summary|resumen)\\s*:\\s*");
     private static final int MIN_CHUNK_TOKENS = 120;
     private static final int APPROX_CHARS_PER_TOKEN = 4;
     private static final Map<String, Object> CLASSIFY_OPTIONS = Map.of("num_predict", 80, "temperature", 0.35);
@@ -173,18 +178,33 @@ public class OllamaProvider implements AiService {
         if (response == null || response.isBlank()) {
             return new AiService.TitleAndSummary(fallbackTitle(lang), "");
         }
+        String raw = response.trim();
         String title = "";
         String summary = "";
-        String[] parts = response.split("(?i)SUMMARY:\\s*", 2);
-        if (parts.length >= 2) {
-            summary = parts[1].trim();
-            String titlePart = parts[0].trim();
-            if (titlePart.toUpperCase().startsWith("TITLE:")) {
-                title = titlePart.substring(6).trim();
-            }
+
+        Matcher split = SUMMARY_SPLIT_PATTERN.matcher(raw);
+        if (split.find()) {
+            summary = raw.substring(split.end()).trim();
+            String titlePart = raw.substring(0, split.start()).trim();
+            title = TITLE_PREFIX_PATTERN.matcher(titlePart).replaceFirst("").trim();
         }
-        if (title.isBlank()) title = deriveTitleFromSummary(summary.isBlank() ? response : summary, lang);
-        if (summary.isBlank()) summary = response.trim();
+
+        if (title.isBlank()) {
+            title = deriveTitleFromSummary(summary.isBlank() ? raw : summary, lang);
+        }
+        if (summary.isBlank()) {
+            summary = raw;
+        }
+
+        title = TITLE_PREFIX_PATTERN.matcher(title).replaceFirst("").trim();
+        summary = SUMMARY_PREFIX_PATTERN.matcher(summary).replaceFirst("").trim();
+        // If model repeats title line in summary, strip it for a cleaner UX.
+        String titleLine = title.trim();
+        if (!titleLine.isBlank() && summary.regionMatches(true, 0, titleLine, 0, titleLine.length())) {
+            summary = summary.substring(titleLine.length()).trim();
+            summary = SUMMARY_PREFIX_PATTERN.matcher(summary).replaceFirst("").trim();
+        }
+
         return new AiService.TitleAndSummary(title, summary);
     }
 

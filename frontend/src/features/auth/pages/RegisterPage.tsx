@@ -22,7 +22,8 @@ export function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await authApi.register({ email, password })
+      const normalizedEmail = email.trim().toLowerCase()
+      const { data } = await authApi.register({ email: normalizedEmail, password })
       setToken(data.accessToken)
       navigate('/inbox', { replace: true })
     } catch (err) {

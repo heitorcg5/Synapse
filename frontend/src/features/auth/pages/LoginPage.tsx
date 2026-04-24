@@ -22,7 +22,8 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await authApi.login({ email, password })
+      const normalizedEmail = email.trim().toLowerCase()
+      const { data } = await authApi.login({ email: normalizedEmail, password })
       setToken(data.accessToken)
       navigate('/inbox', { replace: true })
     } catch (err) {

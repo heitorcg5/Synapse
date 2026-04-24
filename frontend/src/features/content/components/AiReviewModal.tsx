@@ -4,8 +4,11 @@ import type { ConfirmContentRequest } from '@/shared/types/api'
 import { contentApi } from '../api/content-api'
 import { useTranslation } from 'react-i18next'
 import { getErrorMessage } from '@/shared/utils/api-client'
-import { Input } from '@/shared/components/ui/Input'
+import DatePicker from 'react-datepicker'
 import { Textarea } from '@/shared/components/ui/Textarea'
+import { CalendarDays, Clock3 } from 'lucide-react'
+import 'react-datepicker/dist/react-datepicker.css'
+import './ai-review-datepicker.css'
 
 type PanelState = {
   loadingPreview: boolean
@@ -33,6 +36,12 @@ function defaultReminderParts() {
     reminderDate: toLocalDateInputValue(when),
     reminderTime: toLocalTimeInputValue(when),
   }
+}
+
+function parseReminderDateTime(reminderDate: string, reminderTime: string): Date | null {
+  if (!reminderDate || !reminderTime) return null
+  const parsed = new Date(`${reminderDate}T${reminderTime}`)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 export function AiReviewModal({
@@ -265,7 +274,9 @@ export function AiReviewModal({
                     )}
                     <label style={styles.label}>
                       {t('title')}
-                      <Input
+                      <Textarea
+                        className="resize-none whitespace-pre-wrap leading-relaxed"
+                        rows={2}
                         value={panelStates[i]?.title ?? ''}
                         disabled={panelStates[i]?.confirming}
                         onChange={(e) => {
@@ -333,39 +344,66 @@ export function AiReviewModal({
                       <div style={styles.dateTimeGrid}>
                         <label style={styles.labelTight}>
                           {t('notificationsReminderDate')}
-                          <Input
-                            type="date"
-                            value={panelStates[i]?.reminderDate ?? ''}
-                            disabled={panelStates[i]?.confirming}
-                            onChange={(e) => {
-                              const v = e.target.value
-                              setPanelStates((prev) => {
-                                const next = [...prev]
-                                const st = next[i]
-                                if (!st) return prev
-                                next[i] = { ...st, reminderDate: v }
-                                return next
-                              })
-                            }}
-                          />
+                          <div style={styles.pickerWrap}>
+                            <CalendarDays size={16} style={styles.pickerIcon} />
+                            <DatePicker
+                              selected={parseReminderDateTime(
+                                panelStates[i]?.reminderDate ?? '',
+                                panelStates[i]?.reminderTime ?? '12:00',
+                              )}
+                              onChange={(date: Date | null) => {
+                                if (!date) return
+                                const v = toLocalDateInputValue(date)
+                                setPanelStates((prev) => {
+                                  const next = [...prev]
+                                  const st = next[i]
+                                  if (!st) return prev
+                                  next[i] = { ...st, reminderDate: v }
+                                  return next
+                                })
+                              }}
+                              dateFormat="dd/MM/yyyy"
+                              minDate={new Date()}
+                              disabled={panelStates[i]?.confirming}
+                              className="ai-review-picker-input"
+                              calendarClassName="ai-review-calendar"
+                              popperClassName="ai-review-popper ai-review-time-popper"
+                              popperPlacement="bottom-start"
+                            />
+                          </div>
                         </label>
                         <label style={styles.labelTight}>
                           {t('notificationsReminderTime')}
-                          <Input
-                            type="time"
-                            value={panelStates[i]?.reminderTime ?? ''}
-                            disabled={panelStates[i]?.confirming}
-                            onChange={(e) => {
-                              const v = e.target.value
-                              setPanelStates((prev) => {
-                                const next = [...prev]
-                                const st = next[i]
-                                if (!st) return prev
-                                next[i] = { ...st, reminderTime: v }
-                                return next
-                              })
-                            }}
-                          />
+                          <div style={styles.pickerWrap}>
+                            <Clock3 size={16} style={styles.pickerIcon} />
+                            <DatePicker
+                              selected={parseReminderDateTime(
+                                panelStates[i]?.reminderDate ?? toLocalDateInputValue(new Date()),
+                                panelStates[i]?.reminderTime ?? '',
+                              )}
+                              onChange={(date: Date | null) => {
+                                if (!date) return
+                                const v = toLocalTimeInputValue(date)
+                                setPanelStates((prev) => {
+                                  const next = [...prev]
+                                  const st = next[i]
+                                  if (!st) return prev
+                                  next[i] = { ...st, reminderTime: v }
+                                  return next
+                                })
+                              }}
+                              showTimeSelect
+                              showTimeSelectOnly
+                              timeIntervals={15}
+                              timeCaption={t('notificationsReminderTime')}
+                              dateFormat="HH:mm"
+                              disabled={panelStates[i]?.confirming}
+                              className="ai-review-picker-input"
+                              calendarClassName="ai-review-calendar"
+                              popperClassName="ai-review-popper"
+                              popperPlacement="bottom-start"
+                            />
+                          </div>
                         </label>
                       </div>
                     )}
@@ -481,6 +519,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.35rem',
     color: 'var(--text-muted)',
     fontSize: '0.84rem',
+  },
+  pickerWrap: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  pickerIcon: {
+    position: 'absolute',
+    left: 10,
+    zIndex: 1,
+    color: '#8f96ad',
+    pointerEvents: 'none',
   },
   footerActions: {
     display: 'flex',

@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -27,9 +29,10 @@ public class AuthService {
     private long expirationMs;
 
     public AuthResponse login(LoginRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+                new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword()));
+        UserDetails userDetails = userDetailsService.loadUserByUsername(normalizedEmail);
         String token = jwtService.generateToken(userDetails);
         return AuthResponse.builder()
                 .accessToken(token)
@@ -39,6 +42,7 @@ public class AuthService {
     }
 
     public AuthResponse register(RegisterRequest request) {
+        request.setEmail(normalizeEmail(request.getEmail()));
         UserResponse user = userService.register(request);
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
@@ -47,5 +51,12 @@ public class AuthService {
                 .tokenType("Bearer")
                 .expiresIn(expirationMs / 1000)
                 .build();
+    }
+
+    private static String normalizeEmail(String email) {
+        if (email == null) {
+            return "";
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }
