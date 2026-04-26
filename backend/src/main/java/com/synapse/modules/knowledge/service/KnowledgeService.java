@@ -1,7 +1,5 @@
 package com.synapse.modules.knowledge.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.exceptions.ResourceNotFoundException;
 import com.synapse.modules.inbox.entity.InboxItem;
 import com.synapse.modules.inbox.entity.InboxFolder;
@@ -64,7 +62,6 @@ public class KnowledgeService {
     private final InboxFolderRepository contentFolderRepository;
     private final InboxItemTagRepository contentTagRepository;
     private final TagRepository tagRepository;
-    private final ObjectMapper objectMapper;
     private final com.synapse.modules.knowledge.repository.KnowledgeEmbeddingRepository knowledgeEmbeddingRepository;
     private final com.synapse.modules.ai.service.AiService aiService;
 
@@ -84,9 +81,25 @@ public class KnowledgeService {
                 // Try inbox item ids if knowledge item ids are null
                 List<UUID> inboxIds = nearest.stream().map(e -> e.getInboxItemId()).filter(id -> id != null).distinct().collect(Collectors.toList());
                 List<KnowledgeItem> items = knowledgeItemRepository.findByInboxItemIdIn(inboxIds);
+                Map<UUID, Integer> inboxRank = new java.util.HashMap<>();
+                for (int i = 0; i < inboxIds.size(); i++) {
+                    inboxRank.put(inboxIds.get(i), i);
+                }
+                items.sort((a, b) -> Integer.compare(
+                        inboxRank.getOrDefault(a.getInboxItemId(), Integer.MAX_VALUE),
+                        inboxRank.getOrDefault(b.getInboxItemId(), Integer.MAX_VALUE)
+                ));
                 return mapToResponses(items, userId);
             }
             List<KnowledgeItem> items = knowledgeItemRepository.findAllById(itemIds);
+            Map<UUID, Integer> rank = new java.util.HashMap<>();
+            for (int i = 0; i < itemIds.size(); i++) {
+                rank.put(itemIds.get(i), i);
+            }
+            items.sort((a, b) -> Integer.compare(
+                    rank.getOrDefault(a.getId(), Integer.MAX_VALUE),
+                    rank.getOrDefault(b.getId(), Integer.MAX_VALUE)
+            ));
             return mapToResponses(items, userId);
         } catch (Exception e) {
             log.error("Semantic search failed for user {}: {}", userId, e.getMessage());

@@ -73,13 +73,26 @@ export function KnowledgePage() {
   })
 
   const { data: folders } = useQuery({
+    queryKey: ['knowledge-folders', token ?? ''] as const,
+    queryFn: () => brainApi.knowledgeFolders().then((r) => r.data),
+    enabled: !!token,
+  })
+  const { data: legacyFolders } = useQuery({
     queryKey: ['content-folders', token ?? ''] as const,
     queryFn: () =>
       contentApi
         .contentFolders()
-        .then((r) => r.data.map((f) => ({ id: f.id, parentId: null, name: f.name }))),
+        .then((r) => r.data.map((f) => ({ id: f.id, parentId: null, name: f.name }) as KnowledgeFolderResponse)),
     enabled: !!token,
   })
+  const allFolders = useMemo(() => {
+    const byId = new Map<string, KnowledgeFolderResponse>()
+    for (const folder of folders ?? []) byId.set(folder.id, folder)
+    for (const folder of legacyFolders ?? []) {
+      if (!byId.has(folder.id)) byId.set(folder.id, folder)
+    }
+    return Array.from(byId.values())
+  }, [folders, legacyFolders])
 
   const { data: items, isPending, isError, error } = useQuery({
     queryKey: [
@@ -89,7 +102,7 @@ export function KnowledgePage() {
     ],
     queryFn: () =>
       brainApi.knowledgeList(listParams, effectiveTimezone).then((r) => r.data),
-    refetchInterval: 6_000,
+    refetchInterval: 20_000,
     enabled: !!token,
   })
 
@@ -156,7 +169,7 @@ export function KnowledgePage() {
 
   const folderChildren = useMemo(() => {
     const map = new Map<string | null, KnowledgeFolderResponse[]>()
-    for (const folder of folders ?? []) {
+    for (const folder of allFolders) {
       const parentKey = folder.parentId ?? null
       const arr = map.get(parentKey) ?? []
       arr.push(folder)
@@ -166,15 +179,15 @@ export function KnowledgePage() {
       arr.sort((a, b) => a.name.localeCompare(b.name))
     }
     return map
-  }, [folders])
+  }, [allFolders])
 
   const folderById = useMemo(() => {
     const map = new Map<string, KnowledgeFolderResponse>()
-    for (const folder of folders ?? []) {
+    for (const folder of allFolders) {
       map.set(folder.id, folder)
     }
     return map
-  }, [folders])
+  }, [allFolders])
 
   const breadcrumbFolders = useMemo(() => {
     if (folderFocus === 'all') return []
@@ -450,7 +463,7 @@ export function KnowledgePage() {
         </SurfaceContainer>
       )}
 
-      {folders && (
+      {allFolders.length > 0 && (
         <SurfaceContainer className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-5">
           <aside className="rounded-[14px] border border-white/[0.06] bg-[#0f0f16] p-3">
             <p className="mb-2 px-2 text-[0.74rem] font-semibold uppercase tracking-wide text-[#8F95A6]">

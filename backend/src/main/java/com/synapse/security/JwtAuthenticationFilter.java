@@ -36,9 +36,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
         } else {
-            String tokenParam = request.getParameter("token");
-            if (tokenParam != null && !tokenParam.isBlank()) {
-                jwt = tokenParam;
+            // Limit query-param token support strictly to SSE stream compatibility.
+            String requestUri = request.getRequestURI();
+            boolean sseStreamPath = requestUri != null && requestUri.endsWith("/notifications/stream");
+            if (sseStreamPath) {
+                String tokenParam = request.getParameter("token");
+                if (tokenParam != null && !tokenParam.isBlank()) {
+                    jwt = tokenParam;
+                }
             }
         }
 

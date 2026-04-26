@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,11 @@ public class JwtService {
 
     @Value("${synapse.jwt.expiration-ms:86400000}")
     private long expirationMs;
+
+    @PostConstruct
+    void validateSecretAtStartup() {
+        resolveKeyBytesOrThrow();
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -62,6 +68,14 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
+        byte[] keyBytes = resolveKeyBytesOrThrow();
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private byte[] resolveKeyBytesOrThrow() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT secret is missing. Configure synapse.jwt.secret / JWT_SECRET.");
+        }
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secretKey);
@@ -69,8 +83,8 @@ public class JwtService {
             keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         }
         if (keyBytes.length < 32) {
-            keyBytes = java.util.Arrays.copyOf(keyBytes, 32);
+            throw new IllegalStateException("JWT secret is too short. Provide at least 32 bytes of entropy.");
         }
-        return Keys.hmacShaKeyFor(keyBytes);
+        return keyBytes;
     }
 }

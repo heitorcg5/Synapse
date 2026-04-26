@@ -45,10 +45,23 @@ export function KnowledgeDetailPage() {
     [profile?.dateFormat, profile?.timeFormat, effectiveTimezone],
   )
   const { data: folders } = useQuery({
+    queryKey: ['knowledge-folders', token ?? ''] as const,
+    queryFn: () => brainApi.knowledgeFolders().then((r) => r.data),
+    enabled: !!token,
+  })
+  const { data: legacyFolders } = useQuery({
     queryKey: ['content-folders', token ?? ''] as const,
     queryFn: () => contentApi.contentFolders().then((r) => r.data),
     enabled: !!token,
   })
+  const allFolders = useMemo(() => {
+    const byId = new Map<string, { id: string; name: string }>()
+    for (const folder of folders ?? []) byId.set(folder.id, { id: folder.id, name: folder.name })
+    for (const folder of legacyFolders ?? []) {
+      if (!byId.has(folder.id)) byId.set(folder.id, { id: folder.id, name: folder.name })
+    }
+    return Array.from(byId.values())
+  }, [folders, legacyFolders])
 
   const assignFolderMutation = useMutation({
     mutationFn: (folderId: string | null) =>
@@ -69,7 +82,7 @@ export function KnowledgeDetailPage() {
     queryKey: ['knowledge-item', id],
     queryFn: () => brainApi.knowledgeGet(id!).then((r) => r.data),
     enabled: !!id,
-    refetchInterval: 5_000,
+    refetchInterval: 20_000,
     placeholderData: () => {
       if (!id) return undefined
       const buckets = queryClient.getQueriesData<KnowledgeItemResponse[]>({
@@ -171,7 +184,7 @@ export function KnowledgeDetailPage() {
           style={styles.folderSelect}
         >
           <option value="">{t('knowledge.uncategorized')}</option>
-          {(folders ?? []).map((f) => (
+          {allFolders.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
             </option>
@@ -281,7 +294,7 @@ export function KnowledgeDetailPage() {
                 >
                   Download
                 </button>
-                <Link to={`/content/${k.inboxItemId}`} style={styles.actionBtnLink}>
+                <Link to={`/inbox/${k.inboxItemId}`} style={styles.actionBtnLink}>
                   View original
                 </Link>
                 {sourceContent?.sourceUrl ? (

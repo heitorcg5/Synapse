@@ -17,7 +17,7 @@ function notificationTargetPath(n: NotificationItem): string | null {
     case 'PROCESSING_FINISHED':
     case 'DUPLICATE_DETECTED':
     case 'CONTENT_REMINDER':
-      return n.inboxItemId ? `/content/${n.inboxItemId}` : null
+      return n.inboxItemId ? `/inbox/${n.inboxItemId}` : null
     case 'NEW_CONNECTION':
       return n.knowledgeItemId ? `/knowledge/${n.knowledgeItemId}` : null
     default:
@@ -105,10 +105,6 @@ export function HeaderNotificationsBell() {
       setClearError(getErrorMessage(err))
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: unreadKey })
-      void queryClient.invalidateQueries({ queryKey: listKey })
-    },
-    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: unreadKey })
       void queryClient.invalidateQueries({ queryKey: listKey })
     },

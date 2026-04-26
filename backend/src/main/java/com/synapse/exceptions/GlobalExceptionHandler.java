@@ -84,14 +84,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccess(DataAccessException ex) {
         Throwable cause = ex.getMostSpecificCause();
-        String message = cause.getMessage() != null ? cause.getMessage() : ex.getMessage();
         String traceId = traceId();
-        log.error("Database error (traceId={}): {}", traceId, message, ex);
+        String internalMessage = cause != null && cause.getMessage() != null ? cause.getMessage() : ex.getMessage();
+        log.error("Database error (traceId={}): {}", traceId, internalMessage, ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.builder()
                         .error("DATABASE_ERROR")
-                        .message(message != null ? message : "Database error")
+                        .message("Database operation failed. Please retry or contact support with the trace id.")
                         .traceId(traceId)
                         .build());
     }

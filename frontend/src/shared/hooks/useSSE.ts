@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const MAX_EVENTS = 100
 
 export function useSSE(token: string | null) {
   const [events, setEvents] = useState<any[]>([])
@@ -15,10 +16,18 @@ export function useSSE(token: string | null) {
     const url = `${BASE_URL}/notifications/stream?token=${token}`
     const eventSource = new EventSource(url)
 
+    const appendEvent = (entry: { type: string; data: unknown }) => {
+      setEvents((prev) => {
+        const next = [...prev, entry]
+        if (next.length <= MAX_EVENTS) return next
+        return next.slice(next.length - MAX_EVENTS)
+      })
+    }
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        setEvents((prev) => [...prev, { type: event.type, data }])
+        appendEvent({ type: event.type, data })
       } catch (err) {
         console.error('SSE parsing error:', err)
       }
@@ -27,35 +36,34 @@ export function useSSE(token: string | null) {
     eventSource.addEventListener('JOB_UPDATE', (event: any) => {
       try {
         const data = JSON.parse(event.data)
-        setEvents((prev) => [...prev, { type: 'JOB_UPDATE', data }])
+        appendEvent({ type: 'JOB_UPDATE', data })
       } catch (e) {}
     })
     
     eventSource.addEventListener('JOB_COMPLETED', (event: any) => {
       try {
         const data = JSON.parse(event.data)
-        setEvents((prev) => [...prev, { type: 'JOB_COMPLETED', data }])
+        appendEvent({ type: 'JOB_COMPLETED', data })
       } catch (e) {}
     })
     
     eventSource.addEventListener('JOB_FAILED', (event: any) => {
       try {
         const data = JSON.parse(event.data)
-        setEvents((prev) => [...prev, { type: 'JOB_FAILED', data }])
+        appendEvent({ type: 'JOB_FAILED', data })
       } catch (e) {}
     })
     
     eventSource.addEventListener('JOB_STARTED', (event: any) => {
       try {
         const data = JSON.parse(event.data)
-        setEvents((prev) => [...prev, { type: 'JOB_STARTED', data }])
+        appendEvent({ type: 'JOB_STARTED', data })
       } catch (e) {}
     })
 
     eventSource.onerror = (err) => {
       console.error('SSE Error:', err)
-      eventSource.close()
-      // Note: EventSource auto-reconnects by default
+      // Keep connection open: native EventSource handles retries automatically.
     }
 
     return () => {

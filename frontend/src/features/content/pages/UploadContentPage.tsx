@@ -107,11 +107,15 @@ export function UploadContentPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!folderId) {
+      setError(t('captureFolderRequired'))
+      return
+    }
     createMutation.mutate({
       type,
       ...(sourceUrl.trim() ? { sourceUrl: sourceUrl.trim() } : {}),
       ...(rawContent.trim() ? { rawContent: rawContent.trim() } : {}),
-      ...(folderId ? { folderId } : {}),
+      folderId,
     })
   }
 
@@ -170,7 +174,7 @@ export function UploadContentPage() {
                   }}
                   className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] p-3 text-sm text-app-text outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-in-out focus:border-[#7C5CFF] focus:shadow-[0_0_0_2px_rgba(124,92,255,0.18)]"
                 >
-                  <option value="">{t('captureFolderNone')}</option>
+                  <option value="">{t('captureFolderSelect')}</option>
                   {(foldersQuery.data ?? []).map((folder) => (
                     <option key={folder.id} value={folder.id}>
                       {folder.name}
@@ -237,7 +241,7 @@ export function UploadContentPage() {
             </label>
             <Button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || !folderId}
             >
               {createMutation.isPending ? t('creating') : t('saveToInbox')}
             </Button>

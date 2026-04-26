@@ -24,7 +24,7 @@ export function SummaryViewPage() {
   return (
     <div>
       <div className="mb-4">
-        <Link to={`/content/${id}`} className="text-sm text-app-muted">
+        <Link to={`/inbox/${id}`} className="text-sm text-app-muted">
           ← {t('backToContent')}
         </Link>
       </div>

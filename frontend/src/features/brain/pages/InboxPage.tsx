@@ -351,7 +351,7 @@ export function InboxPage() {
                     <button
                       type="button"
                       className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[0.8rem] text-brand-purple transition-all duration-150 ease-in-out hover:-translate-y-px"
-                      onClick={() => navigate(`/content/${c.id}`)}
+                      onClick={() => navigate(`/inbox/${c.id}`)}
                     >
                       {t('details')}
                     </button>
