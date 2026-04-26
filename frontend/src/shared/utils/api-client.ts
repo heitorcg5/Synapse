@@ -1,6 +1,6 @@
 import axios, { AxiosError, type AxiosResponseHeaders, type RawAxiosResponseHeaders } from 'axios'
 import i18n from '@/i18n/config'
-import type { ErrorResponse } from '../types/api'
+import type { ErrorResponse } from '../types/auth.types'
 
 const defaultApiUrl = (() => {
   if (typeof window === 'undefined') {

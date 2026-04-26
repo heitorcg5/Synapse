@@ -47,11 +47,7 @@ public class KnowledgeItem {
     @Column(name = "source_content_type", length = 32)
     private String sourceContentType;
 
-    /**
-     * JSON array of UUID strings, e.g. ["uuid1","uuid2"].
-     */
-    @Column(name = "linked_item_ids", columnDefinition = "TEXT")
-    private String linkedItemIdsJson;
+
 
     /** Optional folder for hierarchical organization (same row may have tags & relations). */
     @Column(name = "folder_id")

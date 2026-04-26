@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { KnowledgeExportFormat } from '@/shared/types/api'
+import type { KnowledgeExportFormat } from '@/shared/types/knowledge.types'
 
 export type KnowledgeDownloadMode = { type: 'all' } | { type: 'single'; itemId: string; title?: string | null }
 

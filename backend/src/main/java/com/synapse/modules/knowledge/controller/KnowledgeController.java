@@ -56,6 +56,15 @@ public class KnowledgeController {
         );
     }
 
+    @GetMapping("/search/semantic")
+    public ResponseEntity<List<KnowledgeItemResponse>> searchSemantic(
+            @CurrentUser User currentUser,
+            @RequestParam String query,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(knowledgeService.searchSemantic(currentUser.getId(), query, limit));
+    }
+
     @GetMapping("/facets")
     public ResponseEntity<KnowledgeFacetsResponse> facets(@CurrentUser User currentUser) {
         return ResponseEntity.ok(knowledgeService.facetsForUser(currentUser.getId()));

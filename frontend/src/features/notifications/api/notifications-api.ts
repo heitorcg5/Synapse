@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/utils/api-client'
-import type { NotificationItem, UnreadCountResponse } from '@/shared/types/api'
+import type { NotificationItem, UnreadCountResponse } from '@/shared/types/notification.types'
 
 export const notificationsApi = {
   getUnreadCount: () => apiClient.get<UnreadCountResponse>('/notifications/unread-count'),

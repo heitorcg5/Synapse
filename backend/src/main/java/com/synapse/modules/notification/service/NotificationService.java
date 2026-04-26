@@ -26,8 +26,8 @@ public class NotificationService {
     private final UserNotificationRepository userNotificationRepository;
 
     @Transactional
-    public void notifyProcessingFinishedIfEnabled(User user, UUID contentId) {
-        if (user == null || contentId == null) {
+    public void notifyProcessingFinishedIfEnabled(User user, UUID inboxItemId) {
+        if (user == null || inboxItemId == null) {
             return;
         }
         if (!UserNotificationPreferences.isNotifyProcessingFinished(user)) {
@@ -36,13 +36,13 @@ public class NotificationService {
         userNotificationRepository.save(UserNotification.builder()
                 .userId(user.getId())
                 .type(NotificationType.PROCESSING_FINISHED)
-                .contentId(contentId)
+                .inboxItemId(inboxItemId)
                 .build());
     }
 
     @Transactional
-    public void notifyDuplicateIfEnabled(User user, UUID contentId, UUID relatedContentId) {
-        if (user == null || contentId == null || relatedContentId == null) {
+    public void notifyDuplicateIfEnabled(User user, UUID inboxItemId, UUID relatedInboxItemId) {
+        if (user == null || inboxItemId == null || relatedInboxItemId == null) {
             return;
         }
         if (!UserNotificationPreferences.isNotifyDuplicateDetected(user)) {
@@ -51,8 +51,8 @@ public class NotificationService {
         userNotificationRepository.save(UserNotification.builder()
                 .userId(user.getId())
                 .type(NotificationType.DUPLICATE_DETECTED)
-                .contentId(contentId)
-                .relatedContentId(relatedContentId)
+                .inboxItemId(inboxItemId)
+                .relatedInboxItemId(relatedInboxItemId)
                 .build());
     }
 
@@ -73,14 +73,14 @@ public class NotificationService {
     }
 
     @Transactional
-    public void notifyScheduledContentReminder(UUID userId, UUID contentId) {
-        if (userId == null || contentId == null) {
+    public void notifyScheduledContentReminder(UUID userId, UUID inboxItemId) {
+        if (userId == null || inboxItemId == null) {
             return;
         }
         userNotificationRepository.save(UserNotification.builder()
                 .userId(userId)
                 .type(NotificationType.CONTENT_REMINDER)
-                .contentId(contentId)
+                .inboxItemId(inboxItemId)
                 .build());
     }
 
@@ -122,8 +122,8 @@ public class NotificationService {
         return NotificationResponse.builder()
                 .id(n.getId())
                 .type(n.getType().name())
-                .contentId(n.getContentId())
-                .relatedContentId(n.getRelatedContentId())
+                .inboxItemId(n.getInboxItemId())
+                .relatedInboxItemId(n.getRelatedInboxItemId())
                 .knowledgeItemId(n.getKnowledgeItemId())
                 .connectionCount(n.getConnectionCount())
                 .read(n.getReadAt() != null)

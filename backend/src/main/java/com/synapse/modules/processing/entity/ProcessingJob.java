@@ -19,14 +19,15 @@ public class ProcessingJob {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "content_id", nullable = false)
-    private UUID contentId;
-
-    /**
-     * Same as {@link #contentId} in Digital Brain model (inbox item id).
-     */
-    @Column(name = "inbox_item_id")
+    @Column(name = "inbox_item_id", nullable = false)
     private UUID inboxItemId;
+
+    @Column(name = "retry_count", nullable = false)
+    @Builder.Default
+    private int retryCount = 0;
+
+    @Column(name = "last_error", columnDefinition = "TEXT")
+    private String lastError;
 
     @Column(nullable = false)
     private String status;

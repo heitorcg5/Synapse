@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ContentResponse } from '@/shared/types/api'
-import type { ConfirmContentRequest } from '@/shared/types/api'
+import type { InboxItemResponse } from '@/shared/types/inbox.types'
+import type { ConfirmInboxItemRequest } from '@/shared/types/inbox.types'
 import { contentApi } from '../api/content-api'
 import { useTranslation } from 'react-i18next'
 import { getErrorMessage } from '@/shared/utils/api-client'
@@ -51,7 +51,7 @@ export function AiReviewModal({
   onCompleted,
 }: {
   open: boolean
-  items: ContentResponse[]
+  items: InboxItemResponse[]
   onClose: () => void
   onCompleted: () => void
 }) {
@@ -185,7 +185,7 @@ export function AiReviewModal({
       reminderAt = parsed.toISOString()
     }
 
-    const confirmPayload: ConfirmContentRequest = {
+    const confirmPayload: ConfirmInboxItemRequest = {
       title: activeState.title ?? '',
       summaryText: activeState.summaryText ?? '',
       notificationsEnabled: activeState.notificationsEnabled ?? false,

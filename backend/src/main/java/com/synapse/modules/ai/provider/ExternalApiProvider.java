@@ -46,6 +46,12 @@ public class ExternalApiProvider implements AiService {
     }
 
     @Override
+    public List<Float> generateEmbedding(String text) {
+        // Not implemented for external API provider yet
+        return List.of();
+    }
+
+    @Override
     public String getModelName() {
         return "external";
     }

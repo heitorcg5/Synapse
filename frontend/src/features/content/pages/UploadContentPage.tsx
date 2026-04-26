@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { contentApi } from '../api/content-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
-import type { CreateContentRequest } from '@/shared/types/api'
+import type { CreateInboxItemRequest } from '@/shared/types/inbox.types'
 import { Input } from '@/shared/components/ui/Input'
 import { Textarea } from '@/shared/components/ui/Textarea'
 import { Button } from '@/shared/components/ui/Button'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
 
-const TYPES: CreateContentRequest['type'][] = [
+const TYPES: CreateInboxItemRequest['type'][] = [
   'TEXT',
   'VIDEO',
   'WEB',
@@ -19,7 +19,7 @@ const TYPES: CreateContentRequest['type'][] = [
 ]
 const CREATE_FOLDER_OPTION = '__create-new-folder__'
 
-function inferContentTypeFromUrl(rawUrl: string): CreateContentRequest['type'] | null {
+function inferContentTypeFromUrl(rawUrl: string): CreateInboxItemRequest['type'] | null {
   const trimmed = rawUrl.trim()
   if (!trimmed) return null
 
@@ -51,7 +51,7 @@ function inferContentTypeFromUrl(rawUrl: string): CreateContentRequest['type'] |
 
 export function UploadContentPage() {
   const { t } = useTranslation()
-  const [type, setType] = useState<CreateContentRequest['type']>('TEXT')
+  const [type, setType] = useState<CreateInboxItemRequest['type']>('TEXT')
   const [sourceUrl, setSourceUrl] = useState('')
   const [typeOverridden, setTypeOverridden] = useState(false)
   const [rawContent, setRawContent] = useState('')
@@ -81,7 +81,7 @@ export function UploadContentPage() {
   }, [sourceUrl, inferredType, type, typeOverridden])
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateContentRequest) =>
+    mutationFn: (data: CreateInboxItemRequest) =>
       contentApi.create(data).then((res) => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-list'] })
@@ -140,7 +140,7 @@ export function UploadContentPage() {
               <select
                 value={type}
                 onChange={(e) => {
-                  setType(e.target.value as CreateContentRequest['type'])
+                  setType(e.target.value as CreateInboxItemRequest['type'])
                   setTypeOverridden(true)
                 }}
                 className="rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] p-3 text-sm text-app-text outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-in-out focus:border-[#7C5CFF] focus:shadow-[0_0_0_2px_rgba(124,92,255,0.18)]"

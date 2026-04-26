@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 public class OllamaProvider implements AiService {
 
     private static final String SUMMARY_SYSTEM_TEMPLATE =
-            "You are a concise summarizer. Use ONLY what appears in the user's Content block. Do not add generic "
+            "You are a concise summarizer. Use ONLY what appears in the user's InboxItem block. Do not add generic "
                     + "background about hosting platforms (e.g. YouTube/Google privacy, moderation, or copyright rules) "
-                    + "unless that is clearly the main subject of the Content. Reply only with the summary, no preamble. "
+                    + "unless that is clearly the main subject of the InboxItem. Reply only with the summary, no preamble. "
                     + "Reply in %s.";
     private static final String CLASSIFICATION_SYSTEM_TEMPLATE =
             "You are a content classifier. Infer topics from the substantive subject of the text; do not label with "
@@ -41,11 +41,11 @@ public class OllamaProvider implements AiService {
                     + "platform unless the text is about that. Reply only with the title text, no preamble and no quotes. "
                     + "Reply in %s.";
     private static final String TITLE_SUMMARY_SYSTEM_TEMPLATE =
-            "You generate titles and summaries STRICTLY from the provided Content block. %s\n"
+            "You generate titles and summaries STRICTLY from the provided InboxItem block. %s\n"
                     + "Rules: Summarize only what is stated there. Do NOT pad with encyclopedic facts about YouTube, "
                     + "Google, privacy policies, moderation systems, or copyright in general unless that material is clearly "
-                    + "the main substance of the Content (e.g. the capture is an article about those policies).\n"
-                    + "If the Content is only a video title, channel name, and link with no transcript or description, "
+                    + "the main substance of the InboxItem (e.g. the capture is an article about those policies).\n"
+                    + "If the InboxItem is only a video title, channel name, and link with no transcript or description, "
                     + "infer the likely real-world topic from the title and channel only—keep the summary concrete and "
                     + "specific to that topic; do not explain how YouTube works as a product.\n"
                     + "Reply ONLY in this format:\nTITLE: [3-8 word title]\n\nSUMMARY: [your summary text only, no label repeats]\nNo preamble. "
@@ -133,7 +133,7 @@ public class OllamaProvider implements AiService {
             String prompt = String.format(
                     "Generate a concise title (3 to 10 words) based only on the following content. "
                             + "Do not use a generic title about a video platform unless the text is about that.\n\n"
-                            + "Content:\n%s",
+                            + "InboxItem:\n%s",
                     cleaned);
             String systemMessage = String.format(TITLE_SYSTEM_TEMPLATE, langName(opts.responseLanguage()));
             String response = ollamaClient.generate(prompt, systemMessage, opts.summaryDetail().titleOnlyOptions());
@@ -159,7 +159,7 @@ public class OllamaProvider implements AiService {
         try {
             String prompt = String.format(
                     "Generate a title and summary for the following capture. Stay anchored to this text only.\n\n"
-                            + "Content:\n%s",
+                            + "InboxItem:\n%s",
                     cleaned);
             SummaryDetailLevel d = opts.summaryDetail();
             String systemMessage = String.format(
@@ -237,7 +237,7 @@ public class OllamaProvider implements AiService {
         String cleaned = truncateToTokenBudget(cleanText(text), effectiveChunkTokens(opts), effectiveChunkChars(opts));
         try {
             String prompt = String.format(
-                    "Infer tags from the following Content.\n\nContent:\n%s",
+                    "Infer tags from the following InboxItem.\n\nContent:\n%s",
                     cleaned);
             String systemMessage = String.format(TAGS_SYSTEM_TEMPLATE, langName(opts.responseLanguage()));
             String response = ollamaClient.generateJson(prompt, systemMessage, TAG_OPTIONS);
@@ -293,6 +293,16 @@ public class OllamaProvider implements AiService {
             }
         }
         return List.of();
+    }
+
+    @Override
+    public List<Float> generateEmbedding(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        // Embeddings perform better on clean, focused text.
+        String cleaned = truncateToTokenBudget(cleanText(text), 1000, 4000);
+        return ollamaClient.generateEmbedding(cleaned);
     }
 
     @Override

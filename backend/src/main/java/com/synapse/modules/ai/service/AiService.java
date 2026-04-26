@@ -40,5 +40,10 @@ public interface AiService {
 
     List<String> generateTags(String text, AiCallOptions options);
 
+    /**
+     * Generates a vector embedding for the given text.
+     */
+    List<Float> generateEmbedding(String text);
+
     String getModelName();
 }

@@ -10,12 +10,8 @@ import {
   getErrorMessage,
   parseContentDispositionFilename,
 } from '@/shared/utils/api-client'
-import type {
-  KnowledgeExportFormat,
-  KnowledgeFolderResponse,
-  KnowledgeItemResponse,
-} from '@/shared/types/api'
-import { normalizeKnowledgeExportFormat } from '@/shared/types/api'
+import type { KnowledgeExportFormat, KnowledgeFolderResponse, KnowledgeItemResponse } from '@/shared/types/knowledge.types'
+import { normalizeKnowledgeExportFormat } from '@/shared/types/knowledge.types'
 import { brainApi, type KnowledgeListParams } from '../api/brain-api'
 import { contentApi } from '@/features/content/api/content-api'
 import { KnowledgeDownloadDialog, type KnowledgeDownloadMode } from '../components/KnowledgeDownloadDialog'
@@ -240,9 +236,9 @@ export function KnowledgePage() {
         >
           <span className="font-semibold">{k.title || t('untitledNote')}</span>
           <span className="text-[0.8rem] text-app-muted">
-            {k.inboxUploadedAt || k.createdAt
+            {k.inboxCapturedAt || k.createdAt
               ? formatUserDateTime(
-                  (k.inboxUploadedAt || k.createdAt) as string,
+                  (k.inboxCapturedAt || k.createdAt) as string,
                   i18n.language,
                   formatPrefs,
                 )

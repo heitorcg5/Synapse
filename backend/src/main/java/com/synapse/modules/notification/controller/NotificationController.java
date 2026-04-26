@@ -24,6 +24,12 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final com.synapse.modules.notification.service.SseService sseService;
+
+    @GetMapping(path = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter stream(@CurrentUser User currentUser) {
+        return sseService.subscribe(currentUser.getId());
+    }
 
     @GetMapping("/unread-count")
     public ResponseEntity<UnreadCountResponse> unreadCount(@CurrentUser User currentUser) {

@@ -34,7 +34,7 @@ public class ProcessingController {
     }
 
     private ProcessingJobResponse toResponse(ProcessingJob j) {
-        UUID inboxId = j.getInboxItemId() != null ? j.getInboxItemId() : j.getContentId();
+        UUID inboxId = j.getInboxItemId() != null ? j.getInboxItemId() : j.getInboxItemId();
         return ProcessingJobResponse.builder()
                 .id(j.getId())
                 .inboxItemId(inboxId)

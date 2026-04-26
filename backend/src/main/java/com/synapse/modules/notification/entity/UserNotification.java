@@ -39,12 +39,12 @@ public class UserNotification {
     private NotificationType type;
 
     /** Inbox capture to open (processing / duplicate primary). */
-    @Column(name = "content_id")
-    private UUID contentId;
+    @Column(name = "inbox_item_id")
+    private UUID inboxItemId;
 
     /** Other capture with same URL (duplicate). */
-    @Column(name = "related_content_id")
-    private UUID relatedContentId;
+    @Column(name = "related_inbox_item_id")
+    private UUID relatedInboxItemId;
 
     /** Knowledge note to open (new connection). */
     @Column(name = "knowledge_item_id")

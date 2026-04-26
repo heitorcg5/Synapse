@@ -1,7 +1,7 @@
 package com.synapse.modules.user.service;
 
-import com.synapse.modules.content.entity.Content;
-import com.synapse.modules.content.repository.ContentRepository;
+import com.synapse.modules.inbox.entity.InboxItem;
+import com.synapse.modules.inbox.repository.InboxItemRepository;
 import com.synapse.modules.user.entity.User;
 import com.synapse.modules.user.util.UserPrivacyPreferences;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.UUID;
 @Slf4j
 public class DataRetentionService {
 
-    private final ContentRepository contentRepository;
+    private final InboxItemRepository inboxItemRepository;
     private final UserDataDeletionService userDataDeletionService;
 
     @Transactional
@@ -30,11 +30,11 @@ public class DataRetentionService {
         }
         int days = "30d".equals(policy) ? 30 : 90;
         Instant cutoff = Instant.now().minus(Duration.ofDays(days));
-        List<UUID> staleIds = contentRepository.findByUserIdAndUploadedAtBefore(user.getId(), cutoff).stream()
-                .map(Content::getId)
+        List<UUID> staleIds = inboxItemRepository.findByUserIdAndCapturedAtBefore(user.getId(), cutoff).stream()
+                .map(InboxItem::getId)
                 .toList();
-        for (UUID contentId : staleIds) {
-            userDataDeletionService.deleteCaptureAndDependents(contentId, user.getId());
+        for (UUID inboxItemId : staleIds) {
+            userDataDeletionService.deleteCaptureAndDependents(inboxItemId, user.getId());
         }
         if (!staleIds.isEmpty()) {
             log.info("Data retention ({}): removed {} capture(s) for user {}", policy, staleIds.size(), user.getId());

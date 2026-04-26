@@ -6,7 +6,7 @@ import { Bell } from 'lucide-react'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { notificationsApi } from '../api/notifications-api'
-import type { NotificationItem } from '@/shared/types/api'
+import type { NotificationItem } from '@/shared/types/notification.types'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
 import { getErrorMessage } from '@/shared/utils/api-client'
 
@@ -17,7 +17,7 @@ function notificationTargetPath(n: NotificationItem): string | null {
     case 'PROCESSING_FINISHED':
     case 'DUPLICATE_DETECTED':
     case 'CONTENT_REMINDER':
-      return n.contentId ? `/content/${n.contentId}` : null
+      return n.inboxItemId ? `/content/${n.inboxItemId}` : null
     case 'NEW_CONNECTION':
       return n.knowledgeItemId ? `/knowledge/${n.knowledgeItemId}` : null
     default:

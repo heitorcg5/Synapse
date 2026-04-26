@@ -12,8 +12,8 @@ import { formatUserDateTime } from '@/shared/preferences/user-datetime'
 import { brainApi } from '../api/brain-api'
 import { ContentPreview } from '../components/ContentPreview'
 import { KnowledgeDownloadDialog } from '../components/KnowledgeDownloadDialog'
-import type { KnowledgeExportFormat, KnowledgeItemResponse } from '@/shared/types/api'
-import { normalizeKnowledgeExportFormat } from '@/shared/types/api'
+import type { KnowledgeExportFormat, KnowledgeItemResponse } from '@/shared/types/knowledge.types'
+import { normalizeKnowledgeExportFormat } from '@/shared/types/knowledge.types'
 import { getErrorMessage, parseContentDispositionFilename } from '@/shared/utils/api-client'
 
 export function KnowledgeDetailPage() {
@@ -131,7 +131,7 @@ export function KnowledgeDetailPage() {
     : null
 
   /** Must match list card: capture time first, then row creation (see KnowledgePage). */
-  const captureIso = k.inboxUploadedAt ?? null
+  const captureIso = k.inboxCapturedAt ?? null
   const savedIso = k.createdAt ?? null
   const primaryIso = (captureIso || savedIso) ?? null
   const showSavedRow =
@@ -263,11 +263,7 @@ export function KnowledgeDetailPage() {
                 </ul>
               </>
             )}
-            {k.linkedItemIds && k.linkedItemIds.length > 0 && (
-              <p style={styles.meta}>
-                {t('linkedItems')}: {k.linkedItemIds.join(', ')}
-              </p>
-            )}
+
           </div>
 
           <MetadataSidePanel

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/app/auth-context'
 import { brainApi } from '@/features/brain/api/brain-api'
 import { userApi } from '@/features/profile/api/user-api'
-import { normalizeKnowledgeExportFormat, type KnowledgeExportFormat } from '@/shared/types/api'
+import { normalizeKnowledgeExportFormat, type KnowledgeExportFormat } from '@/shared/types/knowledge.types'
 import { getErrorMessage } from '@/shared/utils/api-client'
 
 type SummaryDetail = 'short' | 'medium' | 'detailed'

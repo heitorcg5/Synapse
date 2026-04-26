@@ -87,4 +87,46 @@ public class OllamaClient {
             throw new OllamaException("Ollama request failed: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Generate an embedding vector for the given prompt using nomic-embed-text or the default model.
+     */
+    public java.util.List<Float> generateEmbedding(String prompt) {
+        String url = baseUrl.endsWith("/") ? baseUrl + "api/embeddings" : baseUrl + "/api/embeddings";
+        // Default to nomic-embed-text for embeddings as it's specifically designed for this,
+        // but fallback to the configured model if needed.
+        String embeddingModel = "nomic-embed-text";
+        com.synapse.modules.ai.dto.OllamaEmbeddingRequest request = com.synapse.modules.ai.dto.OllamaEmbeddingRequest.builder()
+                .model(embeddingModel)
+                .prompt(prompt)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<com.synapse.modules.ai.dto.OllamaEmbeddingRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<com.synapse.modules.ai.dto.OllamaEmbeddingResponse> response = restTemplate.postForEntity(
+                    url, entity, com.synapse.modules.ai.dto.OllamaEmbeddingResponse.class);
+            if (response.getBody() != null && response.getBody().getEmbedding() != null) {
+                return response.getBody().getEmbedding();
+            }
+            return java.util.List.of();
+        } catch (Exception e) {
+            // Fallback to configured model if nomic-embed-text is not available
+            log.warn("Ollama embedding with nomic-embed-text failed, trying default model '{}': {}", model, e.getMessage());
+            try {
+                request.setModel(model);
+                HttpEntity<com.synapse.modules.ai.dto.OllamaEmbeddingRequest> fallbackEntity = new HttpEntity<>(request, headers);
+                ResponseEntity<com.synapse.modules.ai.dto.OllamaEmbeddingResponse> response = restTemplate.postForEntity(
+                        url, fallbackEntity, com.synapse.modules.ai.dto.OllamaEmbeddingResponse.class);
+                if (response.getBody() != null && response.getBody().getEmbedding() != null) {
+                    return response.getBody().getEmbedding();
+                }
+            } catch (Exception ex) {
+                log.error("Ollama fallback embedding failed: {}", ex.getMessage());
+            }
+            return java.util.List.of();
+        }
+    }
 }

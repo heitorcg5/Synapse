@@ -12,8 +12,8 @@ public class NotificationResponse {
 
     private UUID id;
     private String type;
-    private UUID contentId;
-    private UUID relatedContentId;
+    private UUID inboxItemId;
+    private UUID relatedInboxItemId;
     private UUID knowledgeItemId;
     private Integer connectionCount;
     private boolean read;

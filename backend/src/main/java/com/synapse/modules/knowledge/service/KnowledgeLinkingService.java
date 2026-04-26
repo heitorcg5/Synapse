@@ -43,7 +43,7 @@ public class KnowledgeLinkingService {
         if (newTokens.size() < 3) {
             return;
         }
-        List<KnowledgeItem> others = knowledgeItemRepository.findByUserIdOrderByInboxUploadedAtDesc(userId).stream()
+        List<KnowledgeItem> others = knowledgeItemRepository.findByUserIdOrderByInboxCapturedAtDesc(userId).stream()
                 .filter(k -> !k.getId().equals(newItem.getId()))
                 .toList();
         int added = 0;

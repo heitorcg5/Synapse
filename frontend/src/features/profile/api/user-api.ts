@@ -1,5 +1,6 @@
 import { apiClient } from '@/shared/utils/api-client'
-import type { KnowledgeExportFormat, UserProfileResponse, UpdateProfileRequest } from '@/shared/types/api'
+import type { KnowledgeExportFormat } from '@/shared/types/knowledge.types'
+import type { UserProfileResponse, UpdateProfileRequest } from '@/shared/types/auth.types'
 
 export const userApi = {
   getMe: () => apiClient.get<UserProfileResponse>('/user/me'),

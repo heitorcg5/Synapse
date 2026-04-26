@@ -3,13 +3,13 @@ package com.synapse.modules.knowledge.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synapse.exceptions.ResourceNotFoundException;
-import com.synapse.modules.content.entity.Content;
-import com.synapse.modules.content.entity.ContentFolder;
-import com.synapse.modules.content.entity.ContentTag;
-import com.synapse.modules.content.repository.ContentFolderRepository;
-import com.synapse.modules.content.repository.ContentRepository;
-import com.synapse.modules.content.repository.ContentTagRepository;
-import com.synapse.modules.content.repository.TagRepository;
+import com.synapse.modules.inbox.entity.InboxItem;
+import com.synapse.modules.inbox.entity.InboxFolder;
+import com.synapse.modules.inbox.entity.InboxItemTag;
+import com.synapse.modules.inbox.repository.InboxFolderRepository;
+import com.synapse.modules.inbox.repository.InboxItemRepository;
+import com.synapse.modules.inbox.repository.InboxItemTagRepository;
+import com.synapse.modules.inbox.repository.TagRepository;
 import com.synapse.modules.knowledge.dto.AssignKnowledgeFolderRequest;
 import com.synapse.modules.knowledge.dto.CreateKnowledgeFolderRequest;
 import com.synapse.modules.knowledge.dto.KnowledgeGraphEdgeResponse;
@@ -60,11 +60,39 @@ public class KnowledgeService {
     private final KnowledgeRelationRepository knowledgeRelationRepository;
     private final KnowledgeLinkingService knowledgeLinkingService;
     private final UserRepository userRepository;
-    private final ContentRepository contentRepository;
-    private final ContentFolderRepository contentFolderRepository;
-    private final ContentTagRepository contentTagRepository;
+    private final InboxItemRepository inboxItemRepository;
+    private final InboxFolderRepository contentFolderRepository;
+    private final InboxItemTagRepository contentTagRepository;
     private final TagRepository tagRepository;
     private final ObjectMapper objectMapper;
+    private final com.synapse.modules.knowledge.repository.KnowledgeEmbeddingRepository knowledgeEmbeddingRepository;
+    private final com.synapse.modules.ai.service.AiService aiService;
+
+    @Transactional(readOnly = true)
+    public List<KnowledgeItemResponse> searchSemantic(UUID userId, String query, int limit) {
+        if (query == null || query.isBlank()) return List.of();
+        try {
+            List<Float> queryVector = aiService.generateEmbedding(query);
+            if (queryVector == null || queryVector.isEmpty()) return List.of();
+            // Convert List<Float> to Postgres vector string format: "[1.0, 2.0, ...]"
+            String vectorString = queryVector.toString();
+            List<com.synapse.modules.knowledge.entity.KnowledgeEmbedding> nearest = knowledgeEmbeddingRepository.findNearestNeighbors(userId, vectorString, limit);
+            if (nearest.isEmpty()) return List.of();
+            
+            List<UUID> itemIds = nearest.stream().map(e -> e.getKnowledgeItemId()).filter(id -> id != null).distinct().collect(Collectors.toList());
+            if (itemIds.isEmpty()) {
+                // Try inbox item ids if knowledge item ids are null
+                List<UUID> inboxIds = nearest.stream().map(e -> e.getInboxItemId()).filter(id -> id != null).distinct().collect(Collectors.toList());
+                List<KnowledgeItem> items = knowledgeItemRepository.findByInboxItemIdIn(inboxIds);
+                return mapToResponses(items, userId);
+            }
+            List<KnowledgeItem> items = knowledgeItemRepository.findAllById(itemIds);
+            return mapToResponses(items, userId);
+        } catch (Exception e) {
+            log.error("Semantic search failed for user {}: {}", userId, e.getMessage());
+            return List.of();
+        }
+    }
 
     @Transactional(readOnly = true)
     public List<KnowledgeItemResponse> listByUser(
@@ -85,8 +113,8 @@ public class KnowledgeService {
 
         if (fromInst == null && toExclusive == null && type == null && tag == null) {
             List<KnowledgeItem> rows = newestFirst
-                    ? knowledgeItemRepository.findByUserIdOrderByInboxUploadedAtDesc(userId)
-                    : knowledgeItemRepository.findByUserIdOrderByInboxUploadedAtAsc(userId);
+                    ? knowledgeItemRepository.findByUserIdOrderByInboxCapturedAtDesc(userId)
+                    : knowledgeItemRepository.findByUserIdOrderByInboxCapturedAtAsc(userId);
             return mapToResponses(rows, userId);
         }
         List<KnowledgeItem> rows = new ArrayList<>(
@@ -159,14 +187,14 @@ public class KnowledgeService {
                 .collect(Collectors.toList());
     }
 
-    private record InboxFields(String type, Instant uploadedAt) {}
+    private record InboxFields(String type, Instant capturedAt) {}
 
     private Map<UUID, InboxFields> loadInboxFields(Set<UUID> inboxItemIds) {
         if (inboxItemIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        return contentRepository.findAllById(inboxItemIds).stream()
-                .collect(Collectors.toMap(Content::getId, c -> new InboxFields(c.getType(), c.getUploadedAt())));
+        return inboxItemRepository.findAllById(inboxItemIds).stream()
+                .collect(Collectors.toMap(InboxItem::getId, c -> new InboxFields(c.getType(), c.getCapturedAt())));
     }
 
     private static ZoneId resolveZone(String timezoneParam) {
@@ -188,7 +216,7 @@ public class KnowledgeService {
 
     @Transactional(readOnly = true)
     public KnowledgeGraphResponse graphForUser(UUID userId) {
-        List<KnowledgeItem> items = knowledgeItemRepository.findByUserIdOrderByInboxUploadedAtDesc(userId);
+        List<KnowledgeItem> items = knowledgeItemRepository.findByUserIdOrderByInboxCapturedAtDesc(userId);
         List<KnowledgeGraphNodeResponse> nodes = items.stream()
                 .map(k -> KnowledgeGraphNodeResponse.builder()
                         .id(k.getId())
@@ -243,8 +271,8 @@ public class KnowledgeService {
         String lang = language != null && !language.isBlank() ? language : "en";
         String bodyFinal = body != null && !body.isBlank() ? body : summary;
         String ctype = sourceContentType != null && !sourceContentType.isBlank() ? sourceContentType.trim() : null;
-        UUID contentFolderId = contentRepository.findById(inboxItemId)
-                .map(Content::getFolderId)
+        UUID contentFolderId = inboxItemRepository.findById(inboxItemId)
+                .map(InboxItem::getFolderId)
                 .orElse(null);
 
         KnowledgeItem item = knowledgeItemRepository.findByInboxItemId(inboxItemId).map(existing -> {
@@ -255,9 +283,7 @@ public class KnowledgeService {
             if (ctype != null) {
                 existing.setSourceContentType(ctype);
             }
-            if (existing.getLinkedItemIdsJson() == null || existing.getLinkedItemIdsJson().isBlank()) {
-                existing.setLinkedItemIdsJson("[]");
-            }
+
             if (existing.getFolderId() == null && contentFolderId != null) {
                 existing.setFolderId(contentFolderId);
             }
@@ -271,7 +297,7 @@ public class KnowledgeService {
                 .language(lang)
                 .sourceContentType(ctype)
                 .folderId(contentFolderId)
-                .linkedItemIdsJson("[]")
+
                 .build()));
 
         User user = userRepository.findById(userId).orElse(null);
@@ -294,9 +320,8 @@ public class KnowledgeService {
         String sourceType = (storedType != null && !storedType.isBlank())
                 ? storedType
                 : (inbox != null ? inbox.type() : null);
-        Instant inboxUploadedAt = inbox != null ? inbox.uploadedAt() : null;
+        Instant inboxCapturedAt = inbox != null ? inbox.capturedAt() : null;
         List<String> tagNames = loadTagNames(k.getInboxItemId());
-        List<UUID> linked = parseLinkedIds(k.getLinkedItemIdsJson());
         String folderName = null;
         if (k.getFolderId() != null) {
             folderName = knowledgeFolderRepository.findByIdAndUserId(k.getFolderId(), userId)
@@ -304,7 +329,7 @@ public class KnowledgeService {
                     .orElse(null);
             if (folderName == null) {
                 folderName = contentFolderRepository.findByIdAndUserId(k.getFolderId(), userId)
-                        .map(ContentFolder::getName)
+                        .map(InboxFolder::getName)
                         .orElse(null);
             }
         }
@@ -317,11 +342,11 @@ public class KnowledgeService {
                 .language(k.getLanguage())
                 .sourceContentType(sourceType)
                 .tags(tagNames)
-                .linkedItemIds(linked)
+
                 .folderId(k.getFolderId())
                 .folderName(folderName)
                 .createdAt(k.getCreatedAt())
-                .inboxUploadedAt(inboxUploadedAt);
+                .inboxCapturedAt(inboxCapturedAt);
         if (includeRelations) {
             builder.relatedNotes(loadRelatedNotes(userId, k.getId(), true))
                     .backlinks(loadRelatedNotes(userId, k.getId(), false));
@@ -352,7 +377,7 @@ public class KnowledgeService {
     }
 
     private List<String> loadTagNames(UUID inboxItemId) {
-        List<ContentTag> contentTags = contentTagRepository.findByContentId(inboxItemId);
+        List<InboxItemTag> contentTags = contentTagRepository.findByInboxItemId(inboxItemId);
         return contentTags.stream()
                 .map(ct -> tagRepository.findById(ct.getTagId()).orElse(null))
                 .filter(t -> t != null)
@@ -360,17 +385,5 @@ public class KnowledgeService {
                 .collect(Collectors.toList());
     }
 
-    private List<UUID> parseLinkedIds(String json) {
-        if (json == null || json.isBlank()) {
-            return Collections.emptyList();
-        }
-        try {
-            List<String> ids = objectMapper.readValue(json, new TypeReference<>() {});
-            if (ids == null) return Collections.emptyList();
-            return ids.stream().map(UUID::fromString).collect(Collectors.toList());
-        } catch (Exception e) {
-            log.debug("Could not parse linkedItemIds: {}", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
+
 }

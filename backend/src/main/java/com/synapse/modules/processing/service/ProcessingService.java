@@ -3,18 +3,20 @@ package com.synapse.modules.processing.service;
 import com.synapse.modules.ai.AiCallOptions;
 import com.synapse.modules.ai.SummaryDetailLevel;
 import com.synapse.modules.ai.service.AiService;
-import com.synapse.modules.content.dto.AiPreviewResponse;
-import com.synapse.modules.content.entity.Content;
-import com.synapse.modules.content.entity.Tag;
-import com.synapse.modules.content.repository.ContentRepository;
-import com.synapse.modules.content.repository.ContentTagRepository;
-import com.synapse.modules.content.repository.TagRepository;
-import com.synapse.modules.content.service.WebContentExtractionService;
-import com.synapse.modules.content.service.YouTubeTranscriptService;
+import com.synapse.modules.inbox.dto.AiPreviewResponse;
+import com.synapse.modules.inbox.entity.InboxItem;
+import com.synapse.modules.inbox.entity.Tag;
+import com.synapse.modules.inbox.repository.InboxItemRepository;
+import com.synapse.modules.inbox.repository.InboxItemTagRepository;
+import com.synapse.modules.inbox.repository.TagRepository;
+import com.synapse.modules.inbox.service.WebContentExtractionService;
+import com.synapse.modules.inbox.service.YouTubeTranscriptService;
 import com.synapse.modules.processing.entity.AnalysisResult;
 import com.synapse.modules.processing.entity.ProcessingJob;
 import com.synapse.modules.processing.repository.AnalysisResultRepository;
 import com.synapse.modules.processing.repository.ProcessingJobRepository;
+import com.synapse.modules.knowledge.repository.KnowledgeEmbeddingRepository;
+import com.synapse.modules.knowledge.entity.KnowledgeEmbedding;
 import com.synapse.modules.knowledge.service.KnowledgeService;
 import com.synapse.modules.notification.service.NotificationService;
 import com.synapse.modules.summary.entity.Summary;
@@ -50,103 +52,79 @@ public class ProcessingService {
     @Lazy
     private ProcessingService self;
 
-    private final ContentRepository contentRepository;
+    private final InboxItemRepository inboxItemRepository;
     private final ProcessingJobRepository processingJobRepository;
     private final AnalysisResultRepository analysisResultRepository;
     private final SummaryRepository summaryRepository;
     private final TagRepository tagRepository;
-    private final ContentTagRepository contentTagRepository;
+    private final InboxItemTagRepository contentTagRepository;
+    private final KnowledgeEmbeddingRepository knowledgeEmbeddingRepository;
     private final AiService aiService;
     private final KnowledgeService knowledgeService;
     private final UserRepository userRepository;
     private final WebContentExtractionService webContentExtractionService;
     private final YouTubeTranscriptService youTubeTranscriptService;
+    private final com.synapse.modules.notification.service.SseService sseService;
     private final NotificationService notificationService;
 
-    private static final String STATUS_RUNNING = "RUNNING";
-    private static final String STATUS_QUEUED = "QUEUED";
-    private static final String STATUS_COMPLETED = "COMPLETED";
-    private static final String STATUS_FAILED = "FAILED";
-    private static final String STATUS_PENDING = "PENDING";
-    private static final String CONTENT_STATUS_CONFIRMED = "CONFIRMED";
-    private static final String CONTENT_STATUS_PROCESSING = "PROCESSING";
-    private static final String CONTENT_STATUS_READY = "READY";
-    private static final String CONTENT_STATUS_FAILED = "FAILED";
+    public static final String STATUS_RUNNING = "RUNNING";
+    public static final String STATUS_QUEUED = "QUEUED";
+    public static final String STATUS_PROCESSING = "PROCESSING";
+    public static final String STATUS_COMPLETED = "COMPLETED";
+    public static final String STATUS_FAILED = "FAILED";
+    public static final String STATUS_PENDING = "PENDING";
+    public static final String CONTENT_STATUS_CONFIRMED = "CONFIRMED";
+    public static final String CONTENT_STATUS_PROCESSING = "PROCESSING";
+    public static final String CONTENT_STATUS_READY = "READY";
+    public static final String CONTENT_STATUS_FAILED = "FAILED";
     private static final int PREVIEW_MAX_CHARS = 2200;
     private static final long PREVIEW_CACHE_TTL_SECONDS = 300;
 
     /**
      * Small in-memory cache to avoid regenerating the same preview repeatedly.
-     * Key format: contentId:previewCacheKey (language + summary detail).
+     * Key format: inboxItemId:previewCacheKey (language + summary detail).
      */
     private final Map<String, CachedPreview> previewCache = new ConcurrentHashMap<>();
 
     /**
      * Full pipeline after capture (immediate mode). Creates a new RUNNING job.
      */
-    @Async("processingExecutor")
-    public void processContentAsync(UUID contentId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
-        contentRepository.findById(contentId).ifPresent(c -> {
+    public void processContentAsync(UUID inboxItemId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
+        inboxItemRepository.findById(inboxItemId).ifPresent(c -> {
             c.setStatus(CONTENT_STATUS_PROCESSING);
-            contentRepository.save(c);
+            inboxItemRepository.save(c);
         });
-        AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
-        ProcessingPipelineOptions pipe = pipeline != null
-                ? pipeline
-                : contentRepository.findById(contentId)
-                        .flatMap(c -> userRepository.findById(c.getUserId()))
-                        .map(ProcessingPipelineOptions::fromUser)
-                        .orElseGet(ProcessingPipelineOptions::defaults);
-        log.debug("Processing contentId={} aiLang={} detail={} summarize={}",
-                contentId, opts.responseLanguage(), opts.summaryDetail(), pipe.summarize());
-        ProcessingJob job = createPipelineJob(contentId);
-        try {
-            runPipelineSteps(contentId, job.getId(), opts, pipe);
-        } catch (Exception e) {
-            log.error("Processing failed for content {}", contentId, e);
-            failJob(job.getId());
-            markContentFailed(contentId);
-        }
+        createPipelineJob(inboxItemId);
     }
 
     /**
      * User-triggered processing (e.g. manual mode) for a pending capture.
      */
-    @Async("processingExecutor")
-    public void startManualPipelineAsync(UUID contentId, UUID userId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
-        Content content = contentRepository.findById(contentId)
-                .orElseThrow(() -> new IllegalArgumentException("Content not found"));
+    public void startManualPipelineAsync(UUID inboxItemId, UUID userId, AiCallOptions options, ProcessingPipelineOptions pipeline) {
+        InboxItem content = inboxItemRepository.findById(inboxItemId)
+                .orElseThrow(() -> new IllegalArgumentException("InboxItem not found"));
         if (!content.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Content not found");
+            throw new IllegalArgumentException("InboxItem not found");
         }
         if (!STATUS_PENDING.equals(content.getStatus()) && !CONTENT_STATUS_FAILED.equals(content.getStatus())) {
-            log.debug("start manual pipeline skipped contentId={} status={}", contentId, content.getStatus());
+            log.debug("start manual pipeline skipped inboxItemId={} status={}", inboxItemId, content.getStatus());
             return;
         }
         content.setStatus(CONTENT_STATUS_PROCESSING);
-        contentRepository.save(content);
-        AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
-        ProcessingPipelineOptions pipe = pipeline != null ? pipeline : ProcessingPipelineOptions.defaults();
-        ProcessingJob job = createPipelineJob(contentId);
-        try {
-            runPipelineSteps(contentId, job.getId(), opts, pipe);
-        } catch (Exception e) {
-            log.error("Manual processing failed for content {}", contentId, e);
-            failJob(job.getId());
-            markContentFailed(contentId);
-        }
+        inboxItemRepository.save(content);
+        createPipelineJob(inboxItemId);
     }
 
     /**
      * Background queue: transition QUEUED job to pipeline (must match user {@code background} mode).
      */
-    @Async("processingExecutor")
-    public void processQueuedJob(UUID jobId) {
+    @org.springframework.scheduling.annotation.Async("processingExecutor")
+    public void processQueuedJobSafe(UUID jobId) {
         ProcessingJob job = processingJobRepository.findById(jobId).orElse(null);
-        if (job == null || !STATUS_QUEUED.equals(job.getStatus())) {
+        if (job == null) {
             return;
         }
-        Content content = contentRepository.findById(job.getContentId()).orElse(null);
+        InboxItem content = inboxItemRepository.findById(job.getInboxItemId()).orElse(null);
         if (content == null) {
             return;
         }
@@ -154,35 +132,35 @@ public class ProcessingService {
         if (user == null) {
             return;
         }
-        if (!"background".equals(UserProcessingPreferences.effectiveProcessingMode(user))) {
-            return;
-        }
+        
         job.setStatus(STATUS_RUNNING);
         job.setStep("INIT");
         processingJobRepository.save(job);
+        notifyUser(job.getInboxItemId(), "JOB_STARTED", job);
+        
         AiCallOptions opts = UserAiPreferences.aiCallOptions(user, content.getLanguage(), null);
         ProcessingPipelineOptions pipeline = ProcessingPipelineOptions.fromUser(user);
+        
         try {
             runPipelineSteps(content.getId(), job.getId(), opts, pipeline);
         } catch (Exception e) {
-            log.error("Queued processing failed for content {}", content.getId(), e);
-            failJob(job.getId());
-            markContentFailed(content.getId());
+            log.error("Queued processing failed for job {}", job.getId(), e);
+            failJobWithRetry(job.getId(), e.getMessage());
         }
     }
 
-    private void runPipelineSteps(UUID contentId, UUID jobId, AiCallOptions opts, ProcessingPipelineOptions pipeline) {
-        Content contentRow = contentRepository.findById(contentId)
-                .orElseThrow(() -> new IllegalStateException("Content vanished during processing"));
+    private void runPipelineSteps(UUID inboxItemId, UUID jobId, AiCallOptions opts, ProcessingPipelineOptions pipeline) {
+        InboxItem contentRow = inboxItemRepository.findById(inboxItemId)
+                .orElseThrow(() -> new IllegalStateException("InboxItem vanished during processing"));
         User user = userRepository.findById(contentRow.getUserId())
                 .orElseThrow(() -> new IllegalStateException("User not found"));
         String lang = opts.responseLanguage();
         updateJobStep(jobId, "EXTRACTION");
-        String rawText = extractText(contentId, lang);
+        String rawText = extractText(inboxItemId, lang);
         updateJobStep(jobId, "CLEANING");
         String cleanedText = cleanText(rawText);
         updateJobStep(jobId, "ANALYSIS");
-        saveAnalysis(contentId, cleanedText, lang);
+        saveAnalysis(inboxItemId, cleanedText, lang);
 
         updateJobStep(jobId, "CLASSIFICATION");
         List<String> tagNames = new ArrayList<>();
@@ -193,46 +171,48 @@ public class ProcessingService {
             if (UserKnowledgePreferences.isAutoTaggingEnabled(user)) {
                 List<String> aiTags = aiService.generateTags(cleanedText, opts);
                 tagNames = mergeDistinctTagLabels(tagNames, aiTags);
-                assignTags(contentId, tagNames);
+                assignTags(inboxItemId, tagNames);
             } else {
-                assignTags(contentId, List.of());
+                assignTags(inboxItemId, List.of());
             }
         } else {
-            assignTags(contentId, List.of());
+            assignTags(inboxItemId, List.of());
         }
 
         updateJobStep(jobId, "SUMMARY");
         if (pipeline.summarize()) {
             var titleAndSummary = aiService.summarizeWithTitle(cleanedText, opts);
-            saveSummary(contentId, titleAndSummary.summary(), lang);
-            saveGeneratedTitle(contentId, titleAndSummary.title(), lang);
+            saveSummary(inboxItemId, titleAndSummary.summary(), lang);
+            saveGeneratedTitle(inboxItemId, titleAndSummary.title(), lang);
+            generateAndSaveEmbedding(inboxItemId, user.getId(), titleAndSummary.summary());
         } else {
-            summaryRepository.deleteByContentId(contentId);
+            summaryRepository.deleteByInboxItemId(inboxItemId);
             String generatedTitle = aiService.generateTitle(cleanedText, opts);
-            saveGeneratedTitle(contentId, generatedTitle, lang);
+            saveGeneratedTitle(inboxItemId, generatedTitle, lang);
+            generateAndSaveEmbedding(inboxItemId, user.getId(), cleanedText);
         }
 
         if (pipeline.detectDuplicates()) {
             detectDuplicateCaptures(contentRow, user);
         }
         if (pipeline.suggestConnections()) {
-            log.debug("Suggest connections for contentId={} (not implemented — enable reserved for future graph links)", contentId);
+            log.debug("Suggest connections for inboxItemId={} (not implemented — enable reserved for future graph links)", inboxItemId);
         }
 
         completeJob(jobId);
-        markContentReady(contentId);
-        notificationService.notifyProcessingFinishedIfEnabled(user, contentId);
+        markContentReady(inboxItemId);
+        notificationService.notifyProcessingFinishedIfEnabled(user, inboxItemId);
     }
 
-    private void detectDuplicateCaptures(Content current, User user) {
+    private void detectDuplicateCaptures(InboxItem current, User user) {
         String url = current.getSourceUrl();
         if (url == null || url.isBlank()) {
             return;
         }
-        List<Content> others = contentRepository.findByUserIdAndSourceUrlAndIdNotOrderByUploadedAtAsc(
+        List<InboxItem> others = inboxItemRepository.findByUserIdAndSourceUrlAndIdNotOrderByCapturedAtAsc(
                 current.getUserId(), url.trim(), current.getId());
         if (!others.isEmpty()) {
-            Content first = others.get(0);
+            InboxItem first = others.get(0);
             log.info("Duplicate capture: same source URL already exists for user {} (content {} vs {})",
                     current.getUserId(), current.getId(), first.getId());
             notificationService.notifyDuplicateIfEnabled(user, current.getId(), first.getId());
@@ -243,11 +223,11 @@ public class ProcessingService {
      * Generates AI suggestions for the "pending confirmation" modal.
      * This does not persist anything yet.
      */
-    public AiPreviewResponse generateAiPreview(UUID contentId, UUID userId, String acceptLanguageHeader) {
-        Content content = contentRepository.findById(contentId)
-                .orElseThrow(() -> new IllegalArgumentException("Content not found"));
+    public AiPreviewResponse generateAiPreview(UUID inboxItemId, UUID userId, String acceptLanguageHeader) {
+        InboxItem content = inboxItemRepository.findById(inboxItemId)
+                .orElseThrow(() -> new IllegalArgumentException("InboxItem not found"));
         if (!content.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Content not found");
+            throw new IllegalArgumentException("InboxItem not found");
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -255,7 +235,7 @@ public class ProcessingService {
 
         // For already processed items, reuse persisted AI output instead of generating again.
         if (CONTENT_STATUS_READY.equals(content.getStatus()) || CONTENT_STATUS_CONFIRMED.equals(content.getStatus())) {
-            Summary existing = summaryRepository.findByContentId(contentId).orElse(null);
+            Summary existing = summaryRepository.findByInboxItemId(inboxItemId).orElse(null);
             if (existing != null && existing.getSummaryText() != null && !existing.getSummaryText().isBlank()) {
                 String lang = existing.getLanguage() != null && !existing.getLanguage().isBlank()
                         ? existing.getLanguage()
@@ -271,13 +251,13 @@ public class ProcessingService {
             }
         }
 
-        String cacheKey = contentId + ":" + opts.previewCacheKey();
+        String cacheKey = inboxItemId + ":" + opts.previewCacheKey();
         CachedPreview cached = previewCache.get(cacheKey);
         if (cached != null && !isExpired(cached.createdAt())) {
             return cached.preview();
         }
 
-        String rawText = extractText(contentId, opts.responseLanguage());
+        String rawText = extractText(inboxItemId, opts.responseLanguage());
         String cleanedText = cleanText(rawText);
         if (cleanedText.length() > PREVIEW_MAX_CHARS) {
             cleanedText = cleanedText.substring(0, PREVIEW_MAX_CHARS) + "...";
@@ -319,7 +299,7 @@ public class ProcessingService {
      */
     @Transactional
     public void confirmContent(
-            UUID contentId,
+            UUID inboxItemId,
             UUID userId,
             String acceptLanguageHeader,
             String title,
@@ -327,10 +307,10 @@ public class ProcessingService {
             boolean notificationsEnabled,
             Instant reminderAt
     ) {
-        Content content = contentRepository.findById(contentId)
-                .orElseThrow(() -> new IllegalArgumentException("Content not found"));
+        InboxItem content = inboxItemRepository.findById(inboxItemId)
+                .orElseThrow(() -> new IllegalArgumentException("InboxItem not found"));
         if (!content.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Content not found");
+            throw new IllegalArgumentException("InboxItem not found");
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -353,20 +333,20 @@ public class ProcessingService {
             content.setReminderNotifiedAt(null);
         }
         content.setStatus(CONTENT_STATUS_CONFIRMED);
-        contentRepository.save(content);
+        inboxItemRepository.save(content);
 
-        saveSummary(contentId, summaryText, resolvedLang);
-        previewCache.keySet().removeIf(k -> k.startsWith(contentId + ":"));
+        saveSummary(inboxItemId, summaryText, resolvedLang);
+        previewCache.keySet().removeIf(k -> k.startsWith(inboxItemId + ":"));
 
         String body = content.getRawContent() != null && !content.getRawContent().isBlank()
                 ? content.getRawContent()
-                : analysisResultRepository.findByContentId(contentId)
+                : analysisResultRepository.findByInboxItemId(inboxItemId)
                         .map(AnalysisResult::getRawText)
                         .filter(text -> text != null && !text.isBlank())
                         .orElse(summaryText);
         knowledgeService.upsertFromInboxConfirmation(
                 userId,
-                contentId,
+                inboxItemId,
                 title,
                 summaryText,
                 body,
@@ -374,7 +354,7 @@ public class ProcessingService {
                 content.getType()
         );
 
-        processingJobRepository.findFirstByContentIdOrderByCreatedAtDesc(contentId)
+        processingJobRepository.findFirstByInboxItemIdOrderByCreatedAtDesc(inboxItemId)
                 .ifPresent(job -> {
                     job.setStatus(STATUS_COMPLETED);
                     job.setStep("DONE");
@@ -382,7 +362,7 @@ public class ProcessingService {
                 });
 
         AiCallOptions enrichOpts = UserAiPreferences.aiCallOptions(user, resolvedLang, acceptLanguageHeader);
-        self.runBackgroundEnrichment(contentId, enrichOpts);
+        self.runBackgroundEnrichment(inboxItemId, enrichOpts);
     }
 
     /**
@@ -391,7 +371,7 @@ public class ProcessingService {
     @Transactional
     public void enqueueInboxCapture(UUID inboxItemId) {
         ProcessingJob job = ProcessingJob.builder()
-                .contentId(inboxItemId)
+                .inboxItemId(inboxItemId)
                 .inboxItemId(inboxItemId)
                 .status(STATUS_QUEUED)
                 .step("INBOX")
@@ -406,8 +386,8 @@ public class ProcessingService {
     private record CachedPreview(AiPreviewResponse preview, Instant createdAt) {}
 
     @Async("processingExecutor")
-    public void runBackgroundEnrichment(UUID contentId, AiCallOptions options) {
-        Content content = contentRepository.findById(contentId).orElse(null);
+    public void runBackgroundEnrichment(UUID inboxItemId, AiCallOptions options) {
+        InboxItem content = inboxItemRepository.findById(inboxItemId).orElse(null);
         if (content == null) {
             return;
         }
@@ -416,10 +396,10 @@ public class ProcessingService {
         AiCallOptions opts = options != null ? options : new AiCallOptions("en", SummaryDetailLevel.MEDIUM);
         String lang = opts.responseLanguage();
         try {
-            String rawText = extractText(contentId, lang);
+            String rawText = extractText(inboxItemId, lang);
             String cleanedText = cleanText(rawText);
-            saveAnalysis(contentId, cleanedText, lang);
-            updateJobStepCreateIfNeeded(contentId, "CONFIRMATION");
+            saveAnalysis(inboxItemId, cleanedText, lang);
+            updateJobStepCreateIfNeeded(inboxItemId, "CONFIRMATION");
             List<String> tagNames = new ArrayList<>();
             if (pipe.classify()) {
                 tagNames.addAll(aiService.classify(cleanedText, opts));
@@ -427,24 +407,32 @@ public class ProcessingService {
             if (pipe.generateTags()) {
                 if (user != null && UserKnowledgePreferences.isAutoTaggingEnabled(user)) {
                     tagNames = mergeDistinctTagLabels(tagNames, aiService.generateTags(cleanedText, opts));
-                    assignTags(contentId, tagNames);
+                    assignTags(inboxItemId, tagNames);
                 } else {
-                    assignTags(contentId, List.of());
+                    assignTags(inboxItemId, List.of());
                 }
             } else {
-                assignTags(contentId, List.of());
+                assignTags(inboxItemId, List.of());
             }
+
+            // Generate Embedding
+            Summary summary = summaryRepository.findByInboxItemId(inboxItemId).orElse(null);
+            String textToEmbed = (summary != null && summary.getSummaryText() != null && !summary.getSummaryText().isBlank())
+                    ? summary.getSummaryText()
+                    : cleanedText;
+            generateAndSaveEmbedding(inboxItemId, user.getId(), textToEmbed);
+
         } catch (Exception e) {
-            log.error("Background enrichment failed for content {}", contentId, e);
+            log.error("Background enrichment failed for content {}", inboxItemId, e);
         }
     }
 
-    private ProcessingJob createPipelineJob(UUID contentId) {
+    private ProcessingJob createPipelineJob(UUID inboxItemId) {
         ProcessingJob job = ProcessingJob.builder()
-                .contentId(contentId)
-                .inboxItemId(contentId)
-                .status(STATUS_RUNNING)
+                .inboxItemId(inboxItemId)
+                .status(STATUS_QUEUED)
                 .step("INIT")
+                .retryCount(0)
                 .build();
         return processingJobRepository.save(job);
     }
@@ -453,6 +441,7 @@ public class ProcessingService {
         processingJobRepository.findById(jobId).ifPresent(job -> {
             job.setStep(step);
             processingJobRepository.save(job);
+            notifyUser(job.getInboxItemId(), "JOB_UPDATE", job);
         });
     }
 
@@ -461,6 +450,49 @@ public class ProcessingService {
             job.setStatus(STATUS_COMPLETED);
             job.setStep("DONE");
             processingJobRepository.save(job);
+            notifyUser(job.getInboxItemId(), "JOB_COMPLETED", job);
+        });
+    }
+
+    private void notifyUser(UUID inboxItemId, String eventName, Object data) {
+        inboxItemRepository.findById(inboxItemId).ifPresent(item -> {
+            sseService.sendEventToUser(item.getUserId(), eventName, data);
+        });
+    }
+
+    private void generateAndSaveEmbedding(UUID inboxItemId, UUID userId, String textToEmbed) {
+        if (textToEmbed == null || textToEmbed.isBlank()) return;
+        try {
+            List<Float> vector = aiService.generateEmbedding(textToEmbed);
+            if (vector != null && !vector.isEmpty()) {
+                KnowledgeEmbedding emb = KnowledgeEmbedding.builder()
+                        .userId(userId)
+                        .inboxItemId(inboxItemId)
+                        .embedding(vector)
+                        .build();
+                // Optionally delete old embedding first to keep 1-to-1 mapping
+                knowledgeEmbeddingRepository.deleteByInboxItemId(inboxItemId);
+                knowledgeEmbeddingRepository.save(emb);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to generate embedding for {}: {}", inboxItemId, e.getMessage());
+        }
+    }
+
+    private void failJobWithRetry(UUID jobId, String errorMessage) {
+        processingJobRepository.findById(jobId).ifPresent(job -> {
+            job.setLastError(errorMessage);
+            if (job.getRetryCount() < 3) {
+                job.setRetryCount(job.getRetryCount() + 1);
+                job.setStatus(STATUS_QUEUED);
+                log.warn("Job {} failed but will be retried. Attempt {}", jobId, job.getRetryCount());
+            } else {
+                job.setStatus(STATUS_FAILED);
+                markContentFailed(job.getInboxItemId());
+                log.error("Job {} failed permanently after {} attempts", jobId, job.getRetryCount());
+                notifyUser(job.getInboxItemId(), "JOB_FAILED", job);
+            }
+            processingJobRepository.save(job);
         });
     }
 
@@ -468,11 +500,14 @@ public class ProcessingService {
         processingJobRepository.findById(jobId).ifPresent(job -> {
             job.setStatus(STATUS_FAILED);
             processingJobRepository.save(job);
+            markContentFailed(job.getInboxItemId());
+            notifyUser(job.getInboxItemId(), "JOB_FAILED", job);
         });
     }
 
-    private String extractText(UUID contentId, String preferredLanguage) {
-        return contentRepository.findById(contentId)
+
+    private String extractText(UUID inboxItemId, String preferredLanguage) {
+        return inboxItemRepository.findById(inboxItemId)
                 .map(c -> extractTextFromContent(c, preferredLanguage))
                 .orElse("");
     }
@@ -481,7 +516,7 @@ public class ProcessingService {
      * Extracts best-available capture text:
      * raw content > YouTube transcript+metadata > readable web article extraction.
      */
-    private String extractTextFromContent(Content c, String preferredLanguage) {
+    private String extractTextFromContent(InboxItem c, String preferredLanguage) {
         String url = c.getSourceUrl() != null ? c.getSourceUrl().trim() : "";
         String raw = c.getRawContent() != null ? c.getRawContent().trim() : "";
 
@@ -519,11 +554,11 @@ public class ProcessingService {
         return raw.trim().replaceAll("\\s+", " ");
     }
 
-    private AnalysisResult saveAnalysis(UUID contentId, String cleanedText, String language) {
-        analysisResultRepository.deleteByContentId(contentId);
+    private AnalysisResult saveAnalysis(UUID inboxItemId, String cleanedText, String language) {
+        analysisResultRepository.deleteByInboxItemId(inboxItemId);
         String lang = language != null && !language.isBlank() ? language : "en";
         AnalysisResult ar = AnalysisResult.builder()
-                .contentId(contentId)
+                .inboxItemId(inboxItemId)
                 .rawText(cleanedText)
                 .language(lang)
                 .build();
@@ -549,48 +584,48 @@ public class ProcessingService {
         return new ArrayList<>(canon.values());
     }
 
-    private void assignTags(UUID contentId, List<String> tagNames) {
-        contentTagRepository.deleteByContentId(contentId);
+    private void assignTags(UUID inboxItemId, List<String> tagNames) {
+        contentTagRepository.deleteByInboxItemId(inboxItemId);
         for (String name : tagNames) {
             Tag tag = tagRepository.findByName(name)
                     .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build()));
-            contentTagRepository.save(com.synapse.modules.content.entity.ContentTag.builder()
-                    .contentId(contentId)
+            contentTagRepository.save(com.synapse.modules.inbox.entity.InboxItemTag.builder()
+                    .inboxItemId(inboxItemId)
                     .tagId(tag.getId())
                     .build());
         }
     }
 
-    private void saveSummary(UUID contentId, String summaryText, String language) {
-        summaryRepository.deleteByContentId(contentId);
+    private void saveSummary(UUID inboxItemId, String summaryText, String language) {
+        summaryRepository.deleteByInboxItemId(inboxItemId);
         summaryRepository.save(Summary.builder()
-                .contentId(contentId)
+                .inboxItemId(inboxItemId)
                 .summaryText(summaryText)
                 .model(aiService.getModelName())
                 .language(language != null ? language : "en")
                 .build());
     }
 
-    private void saveGeneratedTitle(UUID contentId, String generatedTitle, String language) {
+    private void saveGeneratedTitle(UUID inboxItemId, String generatedTitle, String language) {
         String fallback = language != null && language.startsWith("es") ? "Captura" : "Capture";
         String resolved = generatedTitle != null && !generatedTitle.isBlank() ? generatedTitle.trim() : fallback;
-        contentRepository.findById(contentId).ifPresent(c -> {
+        inboxItemRepository.findById(inboxItemId).ifPresent(c -> {
             c.setTitle(resolved);
-            contentRepository.save(c);
+            inboxItemRepository.save(c);
         });
     }
 
-    private void markContentReady(UUID contentId) {
-        contentRepository.findById(contentId).ifPresent(c -> {
+    private void markContentReady(UUID inboxItemId) {
+        inboxItemRepository.findById(inboxItemId).ifPresent(c -> {
             c.setStatus(CONTENT_STATUS_READY);
-            contentRepository.save(c);
+            inboxItemRepository.save(c);
         });
     }
 
-    private void markContentFailed(UUID contentId) {
-        contentRepository.findById(contentId).ifPresent(c -> {
+    private void markContentFailed(UUID inboxItemId) {
+        inboxItemRepository.findById(inboxItemId).ifPresent(c -> {
             c.setStatus(CONTENT_STATUS_FAILED);
-            contentRepository.save(c);
+            inboxItemRepository.save(c);
         });
     }
 
@@ -598,7 +633,7 @@ public class ProcessingService {
      * Optional helper for future job integration.
      * Currently a no-op unless ProcessingJob is already being used.
      */
-    private void updateJobStepCreateIfNeeded(UUID contentId, String step) {
+    private void updateJobStepCreateIfNeeded(UUID inboxItemId, String step) {
         // No-op: we keep the legacy async job pipeline for now.
         // This placeholder avoids duplicating job tracking logic during the confirm flow.
     }

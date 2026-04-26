@@ -19,8 +19,8 @@ public class AnalysisResult {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "content_id", nullable = false)
-    private UUID contentId;
+    @Column(name = "inbox_item_id", nullable = false)
+    private UUID inboxItemId;
 
     @Column(name = "raw_text", columnDefinition = "TEXT")
     private String rawText;

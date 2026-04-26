@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { Inbox } from 'lucide-react'
-import type { ContentResponse } from '@/shared/types/api'
+import type { InboxItemResponse } from '@/shared/types/inbox.types'
 import { AiReviewModal } from '@/features/content/components/AiReviewModal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useInboxList } from '../hooks/useInboxList'
@@ -10,6 +10,8 @@ import { contentApi } from '@/features/content/api/content-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { useSSE } from '@/shared/hooks/useSSE'
+import { useAuth } from '@/app/auth-context'
 
 const STATUS_KEYS: Record<string, string> = {
   READY: 'statusReady',
@@ -28,18 +30,27 @@ export function InboxPage() {
   })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { token } = useAuth()
+  const sseEvents = useSSE(token)
+
+  useEffect(() => {
+    if (sseEvents.length > 0) {
+      // Refresh inbox list whenever an SSE event occurs
+      queryClient.invalidateQueries({ queryKey: ['inbox-list'] })
+    }
+  }, [sseEvents, queryClient])
 
   const runPipelineMutation = useMutation({
-    mutationFn: (contentId: string) => contentApi.runProcessingPipeline(contentId),
-    onMutate: async (contentId: string) => {
+    mutationFn: (inboxItemId: string) => contentApi.runProcessingPipeline(inboxItemId),
+    onMutate: async (inboxItemId: string) => {
       await queryClient.cancelQueries({ queryKey: ['inbox-list'] })
-      const previousInbox = queryClient.getQueryData<ContentResponse[]>(['inbox-list']) ?? []
-      queryClient.setQueryData<ContentResponse[]>(['inbox-list'], (old) =>
+      const previousInbox = queryClient.getQueryData<InboxItemResponse[]>(['inbox-list']) ?? []
+      queryClient.setQueryData<InboxItemResponse[]>(['inbox-list'], (old) =>
         (old ?? []).map((item) =>
-          item.id === contentId ? { ...item, status: 'PROCESSING' } : item,
+          item.id === inboxItemId ? { ...item, status: 'PROCESSING' } : item,
         ),
       )
-      setSelectedProcessIds((prev) => prev.filter((id) => id !== contentId))
+      setSelectedProcessIds((prev) => prev.filter((id) => id !== inboxItemId))
       return { previousInbox }
     },
     onError: (_error, _contentId, context) => {
@@ -56,17 +67,17 @@ export function InboxPage() {
   })
 
   const assignFolderMutation = useMutation({
-    mutationFn: ({ contentId, folderId }: { contentId: string; folderId: string | null }) =>
-      contentApi.assignFolder(contentId, folderId).then((r) => r.data),
-    onMutate: async ({ contentId, folderId }) => {
+    mutationFn: ({ inboxItemId, folderId }: { inboxItemId: string; folderId: string | null }) =>
+      contentApi.assignFolder(inboxItemId, folderId).then((r) => r.data),
+    onMutate: async ({ inboxItemId, folderId }) => {
       await queryClient.cancelQueries({ queryKey: ['inbox-list'] })
-      const previousInbox = queryClient.getQueryData<ContentResponse[]>(['inbox-list']) ?? []
+      const previousInbox = queryClient.getQueryData<InboxItemResponse[]>(['inbox-list']) ?? []
       const folderName = folderId
         ? (contentFolders.find((folder) => folder.id === folderId)?.name ?? null)
         : null
-      queryClient.setQueryData<ContentResponse[]>(['inbox-list'], (old) =>
+      queryClient.setQueryData<InboxItemResponse[]>(['inbox-list'], (old) =>
         (old ?? []).map((item) =>
-          item.id === contentId
+          item.id === inboxItemId
             ? { ...item, folderId, folderName: folderName ?? undefined }
             : item,
         ),
@@ -89,7 +100,7 @@ export function InboxPage() {
   const [selectedProcessIds, setSelectedProcessIds] = useState<string[]>([])
   const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>([])
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalItems, setModalItems] = useState<ContentResponse[]>([])
+  const [modalItems, setModalItems] = useState<InboxItemResponse[]>([])
 
   const list = pendingContents ?? []
 
@@ -139,7 +150,7 @@ export function InboxPage() {
     setModalOpen(true)
   }
 
-  const openSingleReviewModal = (content: ContentResponse) => {
+  const openSingleReviewModal = (content: InboxItemResponse) => {
     setModalItems([content])
     setModalOpen(true)
   }
@@ -263,7 +274,7 @@ export function InboxPage() {
                     >
                       {t('inboxRunProcessing')}
                     </button>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.uploadedAt).toLocaleDateString()}</span>
+                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
                   </div>
                 </li>
               ))}
@@ -279,7 +290,7 @@ export function InboxPage() {
                     <span className="min-w-[80px] font-medium text-app-text">{c.type}</span>
                     <span className="text-sm text-app-muted">{translateStatus(c.status)}</span>
                     <span className="text-xs text-brand-cyan">{t('aiPreviewLoading')}</span>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.uploadedAt).toLocaleDateString()}</span>
+                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
                   </div>
                 </li>
               ))}
@@ -317,7 +328,7 @@ export function InboxPage() {
                       value={c.folderId ?? ''}
                       onChange={(e) =>
                         assignFolderMutation.mutate({
-                          contentId: c.id,
+                          inboxItemId: c.id,
                           folderId: e.target.value || null,
                         })
                       }
@@ -344,7 +355,7 @@ export function InboxPage() {
                     >
                       {t('details')}
                     </button>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.uploadedAt).toLocaleDateString()}</span>
+                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
                   </div>
                 </li>
               ))}

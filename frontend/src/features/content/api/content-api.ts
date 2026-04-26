@@ -1,48 +1,40 @@
 import { apiClient } from '@/shared/utils/api-client'
-import type {
-  ContentResponse,
-  ContentFolderResponse,
-  SummaryResponse,
-  TagResponse,
-  CreateContentRequest,
-  AiPreviewResponse,
-  ConfirmContentRequest,
-} from '@/shared/types/api'
+import type { InboxItemResponse, InboxFolderResponse, SummaryResponse, TagResponse, CreateInboxItemRequest, AiPreviewResponse, ConfirmInboxItemRequest } from '@/shared/types/inbox.types'
 
 export const contentApi = {
-  list: () => apiClient.get<ContentResponse[]>('/content/user'),
+  list: () => apiClient.get<InboxItemResponse[]>('/content/user'),
 
   getById: (id: string) =>
-    apiClient.get<ContentResponse>(`/content/${id}`),
+    apiClient.get<InboxItemResponse>(`/content/${id}`),
 
-  create: (data: CreateContentRequest) =>
-    apiClient.post<ContentResponse>('/content', data),
+  create: (data: CreateInboxItemRequest) =>
+    apiClient.post<InboxItemResponse>('/content', data),
 
   delete: (id: string) =>
     apiClient.delete(`/content/${id}`),
 
-  getSummary: (contentId: string) =>
-    apiClient.get<SummaryResponse>(`/content/${contentId}/summary`),
+  getSummary: (inboxItemId: string) =>
+    apiClient.get<SummaryResponse>(`/content/${inboxItemId}/summary`),
 
-  getTags: (contentId: string) =>
-    apiClient.get<TagResponse[]>(`/content/${contentId}/tags`),
+  getTags: (inboxItemId: string) =>
+    apiClient.get<TagResponse[]>(`/content/${inboxItemId}/tags`),
 
-  aiPreview: (contentId: string) =>
-    apiClient.post<AiPreviewResponse>(`/content/${contentId}/ai-preview`, {}),
+  aiPreview: (inboxItemId: string) =>
+    apiClient.post<AiPreviewResponse>(`/content/${inboxItemId}/ai-preview`, {}),
 
-  confirmContent: (contentId: string, payload: ConfirmContentRequest) =>
-    apiClient.post<ContentResponse>(`/content/${contentId}/confirm`, payload),
+  confirmContent: (inboxItemId: string, payload: ConfirmInboxItemRequest) =>
+    apiClient.post<InboxItemResponse>(`/content/${inboxItemId}/confirm`, payload),
 
   /** Run full AI pipeline on a pending capture (202 Accepted). */
-  runProcessingPipeline: (contentId: string) =>
-    apiClient.post<void>(`/content/${contentId}/process`, {}),
+  runProcessingPipeline: (inboxItemId: string) =>
+    apiClient.post<void>(`/content/${inboxItemId}/process`, {}),
 
-  assignFolder: (contentId: string, folderId: string | null) =>
-    apiClient.patch<ContentResponse>(`/content/${contentId}/folder`, { folderId }),
+  assignFolder: (inboxItemId: string, folderId: string | null) =>
+    apiClient.patch<InboxItemResponse>(`/content/${inboxItemId}/folder`, { folderId }),
 
   contentFolders: () =>
-    apiClient.get<ContentFolderResponse[]>('/content/folders'),
+    apiClient.get<InboxFolderResponse[]>('/content/folders'),
 
   contentFolderCreate: (body: { name: string }) =>
-    apiClient.post<ContentFolderResponse>('/content/folders', body),
+    apiClient.post<InboxFolderResponse>('/content/folders', body),
 }

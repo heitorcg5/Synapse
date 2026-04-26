@@ -15,15 +15,20 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProcessingJobRepository extends JpaRepository<ProcessingJob, UUID> {
 
-    List<ProcessingJob> findByContentIdOrderByCreatedAtDesc(UUID contentId);
+    List<ProcessingJob> findByInboxItemIdOrderByCreatedAtDesc(UUID inboxItemId);
 
-    Optional<ProcessingJob> findFirstByContentIdOrderByCreatedAtDesc(UUID contentId);
+    Optional<ProcessingJob> findFirstByInboxItemIdOrderByCreatedAtDesc(UUID inboxItemId);
 
-    @Query("SELECT j FROM ProcessingJob j, Content c "
-            + "WHERE j.contentId = c.id AND c.userId = :userId ORDER BY j.createdAt DESC")
+    @Query("SELECT j FROM ProcessingJob j, InboxItem c "
+            + "WHERE j.inboxItemId = c.id AND c.userId = :userId ORDER BY j.createdAt DESC")
     List<ProcessingJob> findForUserOrderByCreatedAtDesc(@Param("userId") UUID userId);
 
     List<ProcessingJob> findByStatusOrderByCreatedAtAsc(String status, Pageable pageable);
 
-    void deleteByContentId(UUID contentId);
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.QueryHints({@jakarta.persistence.QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2")}) // Postgres SKIP LOCKED
+    @Query("SELECT j FROM ProcessingJob j WHERE j.status = :status ORDER BY j.createdAt ASC")
+    List<ProcessingJob> findNextJobs(@Param("status") String status, Pageable pageable);
+
+    void deleteByInboxItemId(UUID inboxItemId);
 }

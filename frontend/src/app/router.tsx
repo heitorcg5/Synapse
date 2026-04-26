@@ -10,6 +10,7 @@ import { SummaryViewPage } from '@/features/content/pages/SummaryViewPage'
 import { InboxPage } from '@/features/brain/pages/InboxPage'
 import { KnowledgePage } from '@/features/brain/pages/KnowledgePage'
 import { KnowledgeDetailPage } from '@/features/brain/pages/KnowledgeDetailPage'
+import { KnowledgeGraphPage } from '@/features/brain/pages/KnowledgeGraphPage'
 import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { PreferencesPage } from '@/features/profile/pages/PreferencesPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
@@ -45,6 +46,7 @@ export function AppRouter() {
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'inbox', element: <InboxPage /> },
         { path: 'knowledge', element: <KnowledgePage /> },
+        { path: 'knowledge/graph', element: <KnowledgeGraphPage /> },
         { path: 'knowledge/:id', element: <KnowledgeDetailPage /> },
         { path: 'profile', element: <ProfilePage /> },
         { path: 'preferences', element: <PreferencesPage /> },
@@ -52,7 +54,7 @@ export function AppRouter() {
         { path: 'settings/ai', element: <Navigate to="/settings" replace /> },
         { path: 'settings/knowledge', element: <Navigate to="/settings" replace /> },
         { path: 'upload', element: <UploadContentPage /> },
-        { path: 'content/:id', element: <ContentDetailsPage /> },
+        { path: 'inbox/:id', element: <ContentDetailsPage /> },
         { path: 'content/:id/summary', element: <SummaryViewPage /> },
       ],
     },

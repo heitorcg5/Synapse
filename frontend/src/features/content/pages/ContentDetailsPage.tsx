@@ -64,7 +64,7 @@ export function ContentDetailsPage() {
             </Badge>
           </dd>
           <dt className="text-sm text-app-muted">{t('uploaded')}</dt>
-          <dd className="m-0 text-sm">{new Date(content.uploadedAt).toLocaleString()}</dd>
+          <dd className="m-0 text-sm">{new Date(content.capturedAt).toLocaleString()}</dd>
           {content.sourceUrl && (
             <>
               <dt className="text-sm text-app-muted">{t('sourceUrl')}</dt>

@@ -33,7 +33,7 @@ export function SummaryViewPage() {
           {t('summary')}
         </h1>
         <p className="mb-4 text-sm text-app-muted">
-          {content.type} · {new Date(content.uploadedAt).toLocaleDateString()}
+          {content.type} · {new Date(content.capturedAt).toLocaleDateString()}
         </p>
         <div className="mb-4 whitespace-pre-wrap leading-[1.6]">
           {summaryPending

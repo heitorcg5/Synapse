@@ -109,7 +109,7 @@ public class User {
 
     /**
      * Privacy: {@code forever} | {@code 30d} | {@code 90d} — inbox captures (and linked knowledge) older than
-     * the window may be deleted by the retention scheduler (based on {@code contents.uploaded_at}).
+     * the window may be deleted by the retention scheduler (based on {@code contents.captured_at}).
      */
     @Column(name = "data_retention_policy", length = 16)
     private String dataRetentionPolicy;

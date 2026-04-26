@@ -1,0 +1,640 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.synapse:synapse-backend >---------------------
+[INFO] Building Synapse Backend 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ synapse-backend ---
+[INFO] Deleting /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ synapse-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 8 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ synapse-backend ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 111 source files with javac [debug release 17] to target/classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/ProcessingJobRepository.java:[28,25] cannot find symbol
+  symbol:   class Lock
+  location: package jakarta.persistence
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/ProcessingJobRepository.java:[29,5] annotation type not applicable to this kind of declaration
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[43,9] cannot find symbol
+  symbol:   variable log
+  location: class com.synapse.modules.inbox.controller.InboxItemController
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[45,54] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[64,45] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[65,85] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[76,45] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[83,24] cannot find symbol
+  symbol:   method getNotificationsEnabled()
+  location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[83,69] cannot find symbol
+  symbol:   method getNotificationsEnabled()
+  location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[79,28] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[81,24] cannot find symbol
+  symbol:   method getTitle()
+  location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[82,24] cannot find symbol
+  symbol:   method getSummaryText()
+  location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[84,24] cannot find symbol
+  symbol:   method getReminderAt()
+  location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[87,70] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[99,45] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[100,59] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[109,70] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[114,69] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[119,70] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[128,60] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[136,44] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[146,75] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[154,73] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[162,70] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[59,32] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[65,38] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[67,30] cannot find symbol
+  symbol:   method getType()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[68,35] cannot find symbol
+  symbol:   method getSourceUrl()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[69,36] cannot find symbol
+  symbol:   method getRawContent()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[76,48] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[78,57] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[88,21] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[91,45] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[94,43] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[94,89] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[99,75] cannot find symbol
+  symbol:   method getLanguage()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[108,21] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[111,38] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[111,88] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[120,35] invalid method reference
+  cannot find symbol
+    symbol:   method getFolderId()
+    location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[136,35] invalid method reference
+  cannot find symbol
+    symbol:   method getFolderId()
+    location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[146,51] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.dto.InboxFolderResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[147,35] cannot find symbol
+  symbol:   method getId()
+  location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[148,37] cannot find symbol
+  symbol:   method getName()
+  location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[150,25] incompatible types: inference variable T has incompatible bounds
+    equality constraints: com.synapse.modules.inbox.dto.InboxFolderResponse
+    lower bounds: java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[155,30] cannot find symbol
+  symbol:   method getName()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[155,58] cannot find symbol
+  symbol:   method getName()
+  location: variable request of type com.synapse.modules.inbox.dto.CreateInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[159,69] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[163,35] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.dto.InboxFolderResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[164,26] cannot find symbol
+  symbol:   method getId()
+  location: variable saved of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[165,28] cannot find symbol
+  symbol:   method getName()
+  location: variable saved of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[173,21] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[183,21] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[187,32] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable request of type com.synapse.modules.inbox.dto.AssignInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[191,20] cannot find symbol
+  symbol:   method setFolderId(java.util.UUID)
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[193,20] cannot find symbol
+  symbol:   method setFolderId(<nulltype>)
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[197,46] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable saved of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[199,55] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable saved of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[208,31] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.dto.SummaryResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[209,28] cannot find symbol
+  symbol:   method getId()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[210,37] cannot find symbol
+  symbol:   method getInboxItemId()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[211,37] cannot find symbol
+  symbol:   method getSummaryText()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[212,31] cannot find symbol
+  symbol:   method getModel()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[213,34] cannot find symbol
+  symbol:   method getLanguage()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[214,35] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[223,53] cannot find symbol
+  symbol:   method getTagId()
+  location: variable ct of type com.synapse.modules.inbox.entity.InboxItemTag
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,38] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.dto.TagResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,53] cannot find symbol
+  symbol:   method getId()
+  location: variable t of type java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,69] cannot find symbol
+  symbol:   method getName()
+  location: variable t of type java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[226,25] incompatible types: inference variable T has incompatible bounds
+    equality constraints: com.synapse.modules.inbox.dto.TagResponse
+    lower bounds: java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[238,59] cannot find symbol
+  symbol:   method getUserId()
+  location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[239,47] invalid method reference
+  cannot find symbol
+    symbol:   method getId()
+    location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[239,67] invalid method reference
+  cannot find symbol
+    symbol:   method getName()
+    location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[242,13] cannot find symbol
+  symbol:   variable log
+  location: class com.synapse.modules.inbox.service.InboxService
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[248,33] cannot find symbol
+  symbol:   method builder()
+  location: class com.synapse.modules.inbox.dto.InboxItemResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[249,28] cannot find symbol
+  symbol:   method getId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[250,32] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[251,30] cannot find symbol
+  symbol:   method getType()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[252,35] cannot find symbol
+  symbol:   method getSourceUrl()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[253,36] cannot find symbol
+  symbol:   method getRawContent()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[254,34] cannot find symbol
+  symbol:   method getLanguage()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[255,31] cannot find symbol
+  symbol:   method getTitle()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[256,46] cannot find symbol
+  symbol:   method getNotificationsEnabled()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[257,48] cannot find symbol
+  symbol:   method getNotificationReminderAt()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[258,34] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[259,52] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[260,32] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[261,36] cannot find symbol
+  symbol:   method getCapturedAt()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[90,14] cannot find symbol
+  symbol:   method setStatus(java.lang.String)
+  location: variable c of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[102,21] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[105,43] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[105,97] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[106,13] cannot find symbol
+  symbol:   variable log
+  location: class com.synapse.modules.processing.service.ProcessingService
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[106,101] cannot find symbol
+  symbol:   method getStatus()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[109,16] cannot find symbol
+  symbol:   method setStatus(java.lang.String)
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[123,61] cannot find symbol
+  symbol:   method getInboxItemId()
+  location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[127,52] cannot find symbol
+  symbol:   method getUserId()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[132,12] cannot find symbol
+  symbol:   method setStatus(java.lang.String)
+  location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[133,12] cannot find symbol
+  symbol:   method setStep(java.lang.String)
+  location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[136,75] cannot find symbol
+  symbol:   method getLanguage()
+  location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.190 s
+[INFO] Finished at: 2026-04-25T02:04:16+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project synapse-backend: Compilation failure: Compilation failure: 
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/ProcessingJobRepository.java:[28,25] cannot find symbol
+[ERROR]   symbol:   class Lock
+[ERROR]   location: package jakarta.persistence
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/repository/ProcessingJobRepository.java:[29,5] annotation type not applicable to this kind of declaration
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[43,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.synapse.modules.inbox.controller.InboxItemController
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[45,54] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[64,45] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[65,85] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[76,45] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[83,24] cannot find symbol
+[ERROR]   symbol:   method getNotificationsEnabled()
+[ERROR]   location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[83,69] cannot find symbol
+[ERROR]   symbol:   method getNotificationsEnabled()
+[ERROR]   location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[79,28] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[81,24] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[82,24] cannot find symbol
+[ERROR]   symbol:   method getSummaryText()
+[ERROR]   location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[84,24] cannot find symbol
+[ERROR]   symbol:   method getReminderAt()
+[ERROR]   location: variable request of type @jakarta.validation.Valid com.synapse.modules.inbox.dto.ConfirmInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[87,70] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[99,45] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[100,59] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[109,70] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[114,69] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[119,70] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[128,60] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[136,44] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[146,75] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[154,73] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/controller/InboxItemController.java:[162,70] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.synapse.modules.user.entity.User
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[59,32] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[65,38] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[67,30] cannot find symbol
+[ERROR]   symbol:   method getType()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[68,35] cannot find symbol
+[ERROR]   symbol:   method getSourceUrl()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[69,36] cannot find symbol
+[ERROR]   symbol:   method getRawContent()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxItemRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[76,48] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[78,57] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[88,21] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[91,45] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[94,43] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[94,89] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[99,75] cannot find symbol
+[ERROR]   symbol:   method getLanguage()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[108,21] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[111,38] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[111,88] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[120,35] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getFolderId()
+[ERROR]     location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[136,35] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getFolderId()
+[ERROR]     location: class com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[146,51] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.dto.InboxFolderResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[147,35] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[148,37] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[150,25] incompatible types: inference variable T has incompatible bounds
+[ERROR]     equality constraints: com.synapse.modules.inbox.dto.InboxFolderResponse
+[ERROR]     lower bounds: java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[155,30] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[155,58] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.CreateInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[159,69] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[163,35] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.dto.InboxFolderResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[164,26] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable saved of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[165,28] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable saved of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[173,21] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[183,21] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[187,32] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable request of type com.synapse.modules.inbox.dto.AssignInboxFolderRequest
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[191,20] cannot find symbol
+[ERROR]   symbol:   method setFolderId(java.util.UUID)
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[193,20] cannot find symbol
+[ERROR]   symbol:   method setFolderId(<nulltype>)
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[197,46] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable saved of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[199,55] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable saved of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[208,31] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.dto.SummaryResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[209,28] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[210,37] cannot find symbol
+[ERROR]   symbol:   method getInboxItemId()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[211,37] cannot find symbol
+[ERROR]   symbol:   method getSummaryText()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[212,31] cannot find symbol
+[ERROR]   symbol:   method getModel()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[213,34] cannot find symbol
+[ERROR]   symbol:   method getLanguage()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[214,35] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable summary of type com.synapse.modules.summary.entity.Summary
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[223,53] cannot find symbol
+[ERROR]   symbol:   method getTagId()
+[ERROR]   location: variable ct of type com.synapse.modules.inbox.entity.InboxItemTag
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,38] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.dto.TagResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,53] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable t of type java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[225,69] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable t of type java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[226,25] incompatible types: inference variable T has incompatible bounds
+[ERROR]     equality constraints: com.synapse.modules.inbox.dto.TagResponse
+[ERROR]     lower bounds: java.lang.Object
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[238,59] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable folder of type com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[239,47] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getId()
+[ERROR]     location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[239,67] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getName()
+[ERROR]     location: class com.synapse.modules.inbox.entity.InboxFolder
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[242,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.synapse.modules.inbox.service.InboxService
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[248,33] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.synapse.modules.inbox.dto.InboxItemResponse
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[249,28] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[250,32] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[251,30] cannot find symbol
+[ERROR]   symbol:   method getType()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[252,35] cannot find symbol
+[ERROR]   symbol:   method getSourceUrl()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[253,36] cannot find symbol
+[ERROR]   symbol:   method getRawContent()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[254,34] cannot find symbol
+[ERROR]   symbol:   method getLanguage()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[255,31] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[256,46] cannot find symbol
+[ERROR]   symbol:   method getNotificationsEnabled()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[257,48] cannot find symbol
+[ERROR]   symbol:   method getNotificationReminderAt()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[258,34] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[259,52] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[260,32] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/inbox/service/InboxService.java:[261,36] cannot find symbol
+[ERROR]   symbol:   method getCapturedAt()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[90,14] cannot find symbol
+[ERROR]   symbol:   method setStatus(java.lang.String)
+[ERROR]   location: variable c of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[102,21] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[105,43] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[105,97] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[106,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.synapse.modules.processing.service.ProcessingService
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[106,101] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[109,16] cannot find symbol
+[ERROR]   symbol:   method setStatus(java.lang.String)
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[123,61] cannot find symbol
+[ERROR]   symbol:   method getInboxItemId()
+[ERROR]   location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[127,52] cannot find symbol
+[ERROR]   symbol:   method getUserId()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[132,12] cannot find symbol
+[ERROR]   symbol:   method setStatus(java.lang.String)
+[ERROR]   location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[133,12] cannot find symbol
+[ERROR]   symbol:   method setStep(java.lang.String)
+[ERROR]   location: variable job of type com.synapse.modules.processing.entity.ProcessingJob
+[ERROR] /Users/heitorcambre/Documentos/Proyectos/Synapse/backend/src/main/java/com/synapse/modules/processing/service/ProcessingService.java:[136,75] cannot find symbol
+[ERROR]   symbol:   method getLanguage()
+[ERROR]   location: variable content of type com.synapse.modules.inbox.entity.InboxItem
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

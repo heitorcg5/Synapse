@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/utils/api-client'
-import type { AuthResponse } from '@/shared/types/api'
+import type { AuthResponse } from '@/shared/types/auth.types'
 
 export interface LoginRequest {
   email: string

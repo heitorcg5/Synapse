@@ -1,11 +1,6 @@
 import { apiClient } from '@/shared/utils/api-client'
-import type {
-  ContentResponse,
-  KnowledgeFacetsResponse,
-  KnowledgeFolderResponse,
-  KnowledgeGraphResponse,
-  KnowledgeItemResponse,
-} from '@/shared/types/api'
+import type { InboxItemResponse } from '@/shared/types/inbox.types'
+import type { KnowledgeFacetsResponse, KnowledgeFolderResponse, KnowledgeGraphResponse, KnowledgeItemResponse } from '@/shared/types/knowledge.types'
 
 export type KnowledgeListParams = {
   from?: string
@@ -17,7 +12,7 @@ export type KnowledgeListParams = {
 }
 
 export const brainApi = {
-  inboxList: () => apiClient.get<ContentResponse[]>('/inbox'),
+  inboxList: () => apiClient.get<InboxItemResponse[]>('/inbox'),
 
   /** IANA zone sent as header so values like `Europe/Madrid` never break the query string. */
   knowledgeList: (params?: KnowledgeListParams, timeZoneHeader?: string) =>

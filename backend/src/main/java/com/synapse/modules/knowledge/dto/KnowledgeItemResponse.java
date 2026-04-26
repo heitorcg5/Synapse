@@ -19,7 +19,7 @@ public class KnowledgeItemResponse {
     private String language;
     private String sourceContentType;
     private List<String> tags;
-    private List<UUID> linkedItemIds;
+
     private UUID folderId;
     private String folderName;
     private List<KnowledgeLinkedNoteResponse> relatedNotes;
@@ -29,7 +29,7 @@ public class KnowledgeItemResponse {
      */
     private Instant createdAt;
     /**
-     * When the linked inbox capture ({@code contents.uploaded_at}) was stored — usually what users mean by “the date”.
+     * When the linked inbox capture ({@code contents.captured_at}) was stored — usually what users mean by “the date”.
      */
-    private Instant inboxUploadedAt;
+    private Instant inboxCapturedAt;
 }

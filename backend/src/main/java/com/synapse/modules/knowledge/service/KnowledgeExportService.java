@@ -94,8 +94,8 @@ public class KnowledgeExportService {
         md.append("## ").append(escapeMarkdownHeading(title)).append("\n\n");
         md.append("- **Knowledge id**: `").append(item.getId()).append("`\n");
         md.append("- **Inbox item id**: `").append(item.getInboxItemId()).append("`\n");
-        if (item.getInboxUploadedAt() != null) {
-            md.append("- **Captured at**: ").append(item.getInboxUploadedAt()).append("\n");
+        if (item.getInboxCapturedAt() != null) {
+            md.append("- **Captured at**: ").append(item.getInboxCapturedAt()).append("\n");
         }
         if (item.getSourceContentType() != null && !item.getSourceContentType().isBlank()) {
             md.append("- **Type**: ").append(item.getSourceContentType()).append("\n");
@@ -158,8 +158,8 @@ public class KnowledgeExportService {
                 document.add(new Paragraph(title, titleFont));
                 StringBuilder meta = new StringBuilder();
                 meta.append("id=").append(item.getId());
-                if (item.getInboxUploadedAt() != null) {
-                    meta.append(" · captured=").append(item.getInboxUploadedAt());
+                if (item.getInboxCapturedAt() != null) {
+                    meta.append(" · captured=").append(item.getInboxCapturedAt());
                 }
                 if (item.getSourceContentType() != null) {
                     meta.append(" · type=").append(item.getSourceContentType());
@@ -193,7 +193,7 @@ public class KnowledgeExportService {
     }
 
     /**
-     * ASCII-safe basename for Content-Disposition (no path segments).
+     * ASCII-safe basename for InboxItem-Disposition (no path segments).
      */
     static String buildBasename(KnowledgeItemResponse item) {
         String raw = item.getTitle() != null && !item.getTitle().isBlank()

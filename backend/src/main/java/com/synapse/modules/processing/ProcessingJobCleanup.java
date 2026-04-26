@@ -1,6 +1,6 @@
 package com.synapse.modules.processing;
 
-import com.synapse.modules.content.repository.ContentRepository;
+import com.synapse.modules.inbox.repository.InboxItemRepository;
 import com.synapse.modules.processing.entity.ProcessingJob;
 import com.synapse.modules.processing.repository.ProcessingJobRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * One-time cleanup: mark ProcessingJobs as COMPLETED when their Content is already READY.
+ * One-time cleanup: mark ProcessingJobs as COMPLETED when their InboxItem is already READY.
  * Fixes orphaned jobs that stayed QUEUED/INBOX after user confirmation (before we added the update).
  */
 @Component
@@ -26,7 +26,7 @@ public class ProcessingJobCleanup {
     private static final String CONTENT_READY = "READY";
 
     private final ProcessingJobRepository processingJobRepository;
-    private final ContentRepository contentRepository;
+    private final InboxItemRepository inboxItemRepository;
 
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
@@ -36,7 +36,7 @@ public class ProcessingJobCleanup {
                 .toList();
         int fixed = 0;
         for (ProcessingJob job : queued) {
-            boolean contentReady = contentRepository.findById(job.getContentId())
+            boolean contentReady = inboxItemRepository.findById(job.getInboxItemId())
                     .map(c -> CONTENT_READY.equals(c.getStatus()))
                     .orElse(false);
             if (contentReady) {
@@ -47,7 +47,7 @@ public class ProcessingJobCleanup {
             }
         }
         if (fixed > 0) {
-            log.info("ProcessingJobCleanup: fixed {} orphaned jobs (Content READY but job was QUEUED)", fixed);
+            log.info("ProcessingJobCleanup: fixed {} orphaned jobs (InboxItem READY but job was QUEUED)", fixed);
         }
     }
 }

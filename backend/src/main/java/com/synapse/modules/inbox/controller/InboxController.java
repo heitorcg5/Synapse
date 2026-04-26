@@ -1,7 +1,7 @@
 package com.synapse.modules.inbox.controller;
 
-import com.synapse.modules.content.dto.ContentResponse;
-import com.synapse.modules.content.service.ContentService;
+import com.synapse.modules.inbox.dto.InboxItemResponse;
+import com.synapse.modules.inbox.service.InboxService;
 import com.synapse.modules.user.web.CurrentUser;
 import com.synapse.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +20,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InboxController {
 
-    private final ContentService contentService;
+    private final InboxService inboxService;
 
     @GetMapping
-    public ResponseEntity<List<ContentResponse>> listPending(
+    public ResponseEntity<List<InboxItemResponse>> listPending(
             @CurrentUser User currentUser
     ) {
-        return ResponseEntity.ok(contentService.listInboxPending(currentUser.getId()));
+        return ResponseEntity.ok(inboxService.listInboxPending(currentUser.getId()));
     }
 }
