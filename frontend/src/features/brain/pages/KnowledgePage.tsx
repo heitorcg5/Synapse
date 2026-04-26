@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Folder, FolderOpen, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, Folder, FolderOpen, Network, SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
@@ -331,18 +331,27 @@ export function KnowledgePage() {
         <h1 className="m-0 text-[28px] font-semibold leading-[1.3] tracking-[-0.02em] text-app-text">
           {t('nav.knowledge')}
         </h1>
-        {showDownloadAll ? (
-          <button
-            type="button"
-            className="whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.45rem] text-[0.8125rem] font-semibold text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px"
-            onClick={() => {
-              setDownloadErr(null)
-              setDownloadMode({ type: 'all' })
-            }}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/knowledge/graph"
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.45rem] text-[0.8125rem] font-semibold text-app-text no-underline transition-all duration-150 ease-in-out hover:-translate-y-px"
           >
-            {t('knowledge.downloadAll')}
-          </button>
-        ) : null}
+            <Network size={14} />
+            {t('knowledge.graphView')}
+          </Link>
+          {showDownloadAll ? (
+            <button
+              type="button"
+              className="whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.45rem] text-[0.8125rem] font-semibold text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px"
+              onClick={() => {
+                setDownloadErr(null)
+                setDownloadMode({ type: 'all' })
+              }}
+            >
+              {t('knowledge.downloadAll')}
+            </button>
+          ) : null}
+        </div>
       </div>
       <p className="mb-4 text-[15px] text-[#9CA3AF]">{t('knowledgeSubtitle')}</p>
 
