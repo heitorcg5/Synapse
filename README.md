@@ -1,67 +1,120 @@
 # Synapse
 
-AI-powered digital brain to capture content, process it with local-first AI, and turn it into structured knowledge.
+Synapse is an AI-powered knowledge processing system that transforms raw content into structured knowledge.
 
-## Project Overview
+## Overview
 
-Synapse helps teams and individuals move from raw captures (links, videos, text, documents) to actionable knowledge.  
-It combines an inbox-first workflow, AI-assisted review, and knowledge organization (folders, tags, graph relations) with in-app notifications and export capabilities.
+Synapse captures links and text content, sends it through an asynchronous AI processing pipeline, and stores the result as structured knowledge items.
+
+The platform separates capture from processing: users save first, process in background, review AI output, and persist validated knowledge. The resulting knowledge can be explored in list/detail views and in a neural graph to inspect relationships between ideas.
 
 ## Features
 
-- Capture content from multiple sources (`VIDEO`, `WEB`, `AUDIO`, `DOCUMENT`, `TEXT`)
-- Inbox workflow with explicit processing and status tracking
-- AI preview + confirm flow (title, summary, tags)
-- Knowledge hub with detail view, facets, graph, and folder assignment
-- Scheduled reminders and notification center (read, clear, unread counter)
-- User preferences for AI behavior, privacy/retention, localization, and exports
-- Export knowledge as Markdown, JSON, or PDF
+- Content capture from URLs or text
+- Automatic AI summarization
+- Tag and metadata extraction
+- Asynchronous background processing
+- Reliable job queue backed by PostgreSQL
+- Knowledge persistence
+- Interactive neural graph visualization
+- Docker-based deployment
+- REST API backend
+
+## Demo
+
+![Dashboard](docs/images/dashboard.png)
+![Capture](docs/images/capture.png)
+![Knowledge](docs/images/knowledge.png)
+![Neural Graph](docs/images/neural-graph.png)
 
 ## Architecture
 
-- **Backend**: modular Spring Boot monolith exposing `/api/*`
-  - modules: `auth`, `user`, `content`, `inbox`, `processing`, `knowledge`, `notification`, `summary`, `ai`
-- **Frontend**: feature-based React app
-  - features: `auth`, `content`, `brain`, `notifications`, `profile`, `settings`
-- **Data layer**: PostgreSQL + Flyway migrations
-- **Security**: JWT-based authentication + protected APIs
+```mermaid
+flowchart LR
+    User --> Frontend
+    Frontend -->|REST API| Backend
+    Backend --> Queue
+    Queue --> Worker
+    Worker --> AI
+    Worker --> PostgreSQL
+```
 
-Detailed architecture: [`docs/architecture.md`](docs/architecture.md)  
-Detailed API docs: [`docs/api.md`](docs/api.md)
+Additional technical documentation:
+- [Architecture details](docs/architecture.md)
+- [API reference](docs/api.md)
+- [Domain model](docs/domain.md)
+- [Deployment notes](docs/deployment.md)
+
+## System Design
+
+Synapse follows a layered architecture with a Spring Boot backend and a React frontend.  
+The backend exposes stateless REST APIs for capture, processing, knowledge, notifications, and user settings.
+
+Processing is asynchronous and database-backed: jobs are persisted in PostgreSQL and executed by worker logic outside the request/response path. Knowledge items, tags, folders, and relations are stored persistently and served through query-focused endpoints.
+
+## AI Processing Pipeline
+
+1. Capture content
+2. Extract metadata
+3. Generate summary
+4. Extract tags
+5. Store structured knowledge
+
+## Reliability
+
+- Jobs are stored in PostgreSQL
+- Processing can continue after service restarts
+- Retry behavior is handled in processing flows
+- Queue state is persisted (not memory-only)
+- Background processing is isolated from user-facing request latency
 
 ## Tech Stack
 
-- **Backend**: Java 17, Spring Boot 3, Spring Security, Spring Data JPA, Flyway
-- **Database**: PostgreSQL
-- **AI**: Ollama (default local provider, model configurable)
-- **Frontend**: React 18, TypeScript, Vite, React Query, Axios, Tailwind, i18next
-- **Build/Dev**: Maven, npm, Docker Compose
+Backend:
+- Java
+- Spring Boot
+- PostgreSQL
 
-## Setup Instructions
+Frontend:
+- React
+- TypeScript
 
-### 1) Prerequisites
+Infrastructure:
+- Docker
+- REST APIs
+
+## Running the Project
+
+### Prerequisites
 
 - Java 17+
 - Node.js 18+
-- PostgreSQL 14+
-- (Optional, recommended) Ollama running locally
+- Docker + Docker Compose
+- (Optional) Ollama for local AI execution
 
-### 2) Backend
+### Option A: Docker Compose
 
 ```bash
+cp infra/.env.example infra/.env
+docker compose -f infra/docker-compose.yml up --build
+```
+
+Access:
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8080/api`
+
+### Option B: Run services manually
+
+Backend:
+
+```bash
+cp .env.example .env.local
+export JWT_SECRET='c3luYXBzZS1qd3Qtc2VjcmV0LWtleS0yNTYtYml0cy1mb3ItZGV2ZWxvcG1lbnQ='
 cd backend
 mvn spring-boot:run
 ```
 
-Default API URL: `http://localhost:8080/api`
-
-Important env vars:
-
-- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-- `JWT_SECRET`
-- `OLLAMA_URL`, `OLLAMA_MODEL`
-
-### 3) Frontend
+Frontend:
 
 ```bash
 cd frontend
@@ -69,34 +122,22 @@ npm install
 npm run dev
 ```
 
-Frontend defaults to `http://<host>:8080/api` unless `VITE_API_URL` is defined.
-
-### 4) Optional: local AI (Ollama)
+Optional local AI:
 
 ```bash
 ollama serve
 ollama pull llama3
 ```
 
-## Screenshots
+## Project Status
 
-Add product screenshots here (recommended names):
+This project is under active development.
 
-- `docs/screenshots/inbox.png`
-- `docs/screenshots/ai-review.png`
-- `docs/screenshots/knowledge-detail.png`
-- `docs/screenshots/notifications.png`
+New features are being added continuously, and parts of the architecture are still evolving as the platform matures.
 
-Example markdown:
+## Future Improvements
 
-```md
-![Inbox](docs/screenshots/inbox.png)
-```
-
-## Roadmap
-
-- Improve code-splitting and frontend bundle size optimization
-- Expand provider abstraction beyond local Ollama defaults
-- Add role-based access controls for multi-user/team scenarios
-- Add observability dashboards (latency, queue health, AI pipeline metrics)
-- Add CI quality gates for integration/e2e tests
+- Improved graph visualization and graph interaction controls
+- More advanced search and discovery workflows
+- Performance optimizations for larger datasets
+- UX refinements across capture, inbox, and knowledge review flows
