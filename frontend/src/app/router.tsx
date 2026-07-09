@@ -11,6 +11,7 @@ import { InboxPage } from '@/features/brain/pages/InboxPage'
 import { KnowledgePage } from '@/features/brain/pages/KnowledgePage'
 import { KnowledgeDetailPage } from '@/features/brain/pages/KnowledgeDetailPage'
 import { KnowledgeGraphPage } from '@/features/brain/pages/KnowledgeGraphPage'
+import { FlashcardsPage } from '@/features/brain/pages/FlashcardsPage'
 import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { PreferencesPage } from '@/features/profile/pages/PreferencesPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
@@ -46,6 +47,7 @@ export function AppRouter() {
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'inbox', element: <InboxPage /> },
         { path: 'knowledge', element: <KnowledgePage /> },
+        { path: 'flashcards', element: <FlashcardsPage /> },
         { path: 'knowledge/graph', element: <KnowledgeGraphPage /> },
         { path: 'knowledge/:id', element: <KnowledgeDetailPage /> },
         { path: 'profile', element: <ProfilePage /> },

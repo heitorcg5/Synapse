@@ -223,8 +223,9 @@ export const KnowledgeGraph = () => {
   }
 
   return (
-    <div className="flex h-full min-h-[640px] flex-col gap-3 bg-[linear-gradient(180deg,#0b1020,#0a0e18)] p-3">
-      <GraphSearch
+    <div className="relative z-0 flex min-h-[640px] flex-col gap-3 bg-[linear-gradient(180deg,#0b1020,#0a0e18)] p-3">
+      <div className="relative z-0 shrink-0 space-y-2">
+        <GraphSearch
         value={search}
         onChange={setSearch}
         suggestions={searchResults}
@@ -244,9 +245,10 @@ export const KnowledgeGraph = () => {
         tagOptions={tagOptions}
         folderOptions={folderOptions}
       />
+      </div>
       <div
         ref={containerRef}
-        className="relative h-full w-full overflow-hidden rounded-xl border border-gray-800 bg-[#050915]"
+        className="relative isolate min-h-[520px] flex-1 overflow-hidden rounded-xl border border-gray-800 bg-[#050915]"
         onMouseMove={(e) => {
           const box = containerRef.current?.getBoundingClientRect()
           if (!box) return

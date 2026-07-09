@@ -13,12 +13,13 @@ export function Layout() {
     { to: '/dashboard', label: t('dashboard') },
     { to: '/inbox', label: t('nav.inbox') },
     { to: '/knowledge', label: t('nav.knowledge') },
+    { to: '/flashcards', label: t('nav.flashcards') },
     { to: '/upload', label: t('capture') },
   ]
 
   return (
     <div className="min-h-screen bg-app-gradient">
-      <header className="sticky top-0 z-20 h-16 border-b border-[rgba(255,255,255,0.06)] bg-app-bg2/85 backdrop-blur">
+      <header className="sticky top-0 z-40 h-16 border-b border-[rgba(255,255,255,0.06)] bg-app-bg2/95 backdrop-blur">
         <div className="mx-auto flex h-full w-full max-w-[1200px] items-center gap-4 px-6">
           <Link to="/inbox" className="font-heading text-lg font-semibold tracking-wider text-app-text">
             {t('auth.synapse')}
@@ -36,7 +37,7 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="min-h-screen">
+      <main className="relative z-0 min-h-screen">
         <SectionContainer className="pb-16 pt-12">
           <Outlet />
         </SectionContainer>

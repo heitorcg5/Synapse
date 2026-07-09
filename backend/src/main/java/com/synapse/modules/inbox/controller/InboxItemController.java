@@ -81,7 +81,9 @@ public class InboxItemController {
                 request.getTitle(),
                 request.getSummaryText(),
                 request.getNotificationsEnabled() != null && request.getNotificationsEnabled(),
-                request.getReminderAt()
+                request.getReminderAt(),
+                request.getFolderId(),
+                request.getType()
         );
 
         return ResponseEntity.ok(inboxService.getById(id, currentUser.getId()));

@@ -6,6 +6,7 @@ import com.synapse.modules.ai.service.AiService;
 import com.synapse.modules.inbox.dto.AiPreviewResponse;
 import com.synapse.modules.inbox.entity.InboxItem;
 import com.synapse.modules.inbox.entity.Tag;
+import com.synapse.modules.inbox.repository.InboxFolderRepository;
 import com.synapse.modules.inbox.repository.InboxItemRepository;
 import com.synapse.modules.inbox.repository.InboxItemTagRepository;
 import com.synapse.modules.inbox.repository.TagRepository;
@@ -40,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,7 +54,10 @@ public class ProcessingService {
     @Lazy
     private ProcessingService self;
 
+    private static final Set<String> CONTENT_TYPES = Set.of("VIDEO", "WEB", "AUDIO", "DOCUMENT", "TEXT");
+
     private final InboxItemRepository inboxItemRepository;
+    private final InboxFolderRepository inboxFolderRepository;
     private final ProcessingJobRepository processingJobRepository;
     private final AnalysisResultRepository analysisResultRepository;
     private final SummaryRepository summaryRepository;
@@ -305,7 +310,9 @@ public class ProcessingService {
             String title,
             String summaryText,
             boolean notificationsEnabled,
-            Instant reminderAt
+            Instant reminderAt,
+            UUID folderId,
+            String contentType
     ) {
         InboxItem content = inboxItemRepository.findById(inboxItemId)
                 .orElseThrow(() -> new IllegalArgumentException("InboxItem not found"));
@@ -318,6 +325,20 @@ public class ProcessingService {
 
         content.setTitle(title);
         content.setLanguage(resolvedLang);
+        if (contentType != null && !contentType.isBlank()) {
+            String normalizedType = contentType.trim().toUpperCase(Locale.ROOT);
+            if (!CONTENT_TYPES.contains(normalizedType)) {
+                throw new IllegalArgumentException("Invalid content type");
+            }
+            content.setType(normalizedType);
+        }
+        if (folderId != null) {
+            inboxFolderRepository.findByIdAndUserId(folderId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Folder not found"));
+            content.setFolderId(folderId);
+        } else {
+            content.setFolderId(null);
+        }
         content.setNotificationsEnabled(notificationsEnabled);
         if (notificationsEnabled) {
             if (reminderAt == null) {
@@ -351,7 +372,8 @@ public class ProcessingService {
                 summaryText,
                 body,
                 resolvedLang,
-                content.getType()
+                content.getType(),
+                content.getFolderId()
         );
 
         processingJobRepository.findFirstByInboxItemIdOrderByCreatedAtDesc(inboxItemId)

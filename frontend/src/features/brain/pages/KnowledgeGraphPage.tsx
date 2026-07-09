@@ -4,8 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 
 export function KnowledgeGraphPage() {
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/knowledge" className="rounded-full p-2 hover:bg-gray-800 text-gray-400 transition-colors">
             <ArrowLeft className="h-5 w-5" />

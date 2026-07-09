@@ -16,11 +16,11 @@ export function NodeDetailsPanel({
   return (
     <>
       <div
-        className={`absolute inset-0 z-30 bg-black/45 transition-opacity duration-200 ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`absolute inset-0 z-20 bg-black/45 transition-opacity duration-200 ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
         onClick={onClose}
       />
       <aside
-        className={`absolute right-0 top-0 z-40 flex h-full w-full max-w-[380px] flex-col border-l border-white/10 bg-[#0d111b]/95 p-5 shadow-2xl backdrop-blur-md transition-transform duration-250 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`absolute right-0 top-0 z-30 flex h-full w-full max-w-[380px] flex-col border-l border-white/10 bg-[#0d111b]/95 p-5 shadow-2xl backdrop-blur-md transition-transform duration-250 ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h3 className="m-0 text-base font-semibold text-white">{node?.title ?? 'Node details'}</h3>

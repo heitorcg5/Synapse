@@ -38,6 +38,10 @@
     min-height: 100%;
   }
 
+  html {
+    scroll-padding-top: 4rem;
+  }
+
   body {
     @apply m-0 bg-app-bg font-body text-sm text-app-text antialiased;
     background-image: linear-gradient(to bottom, #0b0b0f, #09090d),

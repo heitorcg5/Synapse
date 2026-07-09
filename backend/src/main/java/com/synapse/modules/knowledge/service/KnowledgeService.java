@@ -279,14 +279,12 @@ public class KnowledgeService {
             String summary,
             String body,
             String language,
-            String sourceContentType
+            String sourceContentType,
+            UUID folderId
     ) {
         String lang = language != null && !language.isBlank() ? language : "en";
         String bodyFinal = body != null && !body.isBlank() ? body : summary;
         String ctype = sourceContentType != null && !sourceContentType.isBlank() ? sourceContentType.trim() : null;
-        UUID contentFolderId = inboxItemRepository.findById(inboxItemId)
-                .map(InboxItem::getFolderId)
-                .orElse(null);
 
         KnowledgeItem item = knowledgeItemRepository.findByInboxItemId(inboxItemId).map(existing -> {
             existing.setTitle(title);
@@ -296,10 +294,7 @@ public class KnowledgeService {
             if (ctype != null) {
                 existing.setSourceContentType(ctype);
             }
-
-            if (existing.getFolderId() == null && contentFolderId != null) {
-                existing.setFolderId(contentFolderId);
-            }
+            existing.setFolderId(folderId);
             return knowledgeItemRepository.save(existing);
         }).orElseGet(() -> knowledgeItemRepository.save(KnowledgeItem.builder()
                 .userId(userId)
@@ -309,8 +304,7 @@ public class KnowledgeService {
                 .body(bodyFinal)
                 .language(lang)
                 .sourceContentType(ctype)
-                .folderId(contentFolderId)
-
+                .folderId(folderId)
                 .build()));
 
         User user = userRepository.findById(userId).orElse(null);

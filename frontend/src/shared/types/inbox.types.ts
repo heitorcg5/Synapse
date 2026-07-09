@@ -51,4 +51,6 @@ export interface ConfirmInboxItemRequest {
   summaryText: string
   notificationsEnabled?: boolean
   reminderAt?: string
+  folderId?: string | null
+  type?: CreateInboxItemRequest['type']
 }
