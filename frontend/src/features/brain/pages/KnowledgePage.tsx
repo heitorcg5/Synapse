@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Folder, FolderOpen, Network, SlidersHorizontal } from 'lucide-react'
+import { BookOpen, ChevronRight, Folder, FolderOpen, Network } from 'lucide-react'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { formatUserDateTime } from '@/shared/preferences/user-datetime'
@@ -17,6 +17,12 @@ import { contentApi } from '@/features/content/api/content-api'
 import { KnowledgeDownloadDialog, type KnowledgeDownloadMode } from '../components/KnowledgeDownloadDialog'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
 import { FolderItem } from '@/shared/components/ui/FolderItem'
+import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { FilterPanel, type ActiveFilterChip } from '@/shared/components/ui/FilterPanel'
+import { FilterField } from '@/shared/components/ui/FilterField'
+import { Select } from '@/shared/components/ui/Select'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { fieldClassName } from '@/shared/components/ui/form-styles'
 
 export function KnowledgePage() {
   const { t, i18n } = useTranslation()
@@ -217,10 +223,51 @@ export function KnowledgePage() {
     setTo('')
     setTag('')
     setType('')
+    setSort('desc')
   }
 
   const typeLabel = (raw?: string | null) =>
     raw ? t(`contentTypes.${raw}`, { defaultValue: raw }) : null
+
+  const filterChips = useMemo((): ActiveFilterChip[] => {
+    const chips: ActiveFilterChip[] = []
+    if (sort !== 'desc') {
+      chips.push({
+        id: 'sort',
+        label: `${t('knowledge.sortByDate')}: ${t('knowledge.sortOldestFirst')}`,
+        onRemove: () => setSort('desc'),
+      })
+    }
+    if (from) {
+      chips.push({
+        id: 'from',
+        label: `${t('knowledge.filterFrom')}: ${from}`,
+        onRemove: () => setFrom(''),
+      })
+    }
+    if (to) {
+      chips.push({
+        id: 'to',
+        label: `${t('knowledge.filterTo')}: ${to}`,
+        onRemove: () => setTo(''),
+      })
+    }
+    if (tag) {
+      chips.push({
+        id: 'tag',
+        label: `${t('tags')}: ${tag}`,
+        onRemove: () => setTag(''),
+      })
+    }
+    if (type) {
+      chips.push({
+        id: 'type',
+        label: `${t('type')}: ${typeLabel(type) ?? type}`,
+        onRemove: () => setType(''),
+      })
+    }
+    return chips
+  }, [from, sort, tag, to, type, t])
 
   if (!token) {
     return <p className="text-app-muted">{t('loading')}</p>
@@ -339,37 +386,37 @@ export function KnowledgePage() {
   const showDownloadAll = list.length > 0
 
   return (
-    <div className="w-full max-w-full">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="m-0 text-[28px] font-semibold leading-[1.3] tracking-[-0.02em] text-app-text">
-          {t('nav.knowledge')}
-        </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/knowledge/graph"
-            className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.45rem] text-[0.8125rem] font-semibold text-app-text no-underline transition-all duration-150 ease-in-out hover:-translate-y-px"
-          >
-            <Network size={14} />
-            {t('knowledge.graphView')}
-          </Link>
-          {showDownloadAll ? (
-            <button
-              type="button"
-              className="whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--surface)] px-[0.85rem] py-[0.45rem] text-[0.8125rem] font-semibold text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px"
-              onClick={() => {
-                setDownloadErr(null)
-                setDownloadMode({ type: 'all' })
-              }}
+    <div className="w-full max-w-full space-y-5">
+      <PageHeader
+        title={t('nav.knowledge')}
+        subtitle={t('knowledgeSubtitle')}
+        actions={
+          <>
+            <Link
+              to="/knowledge/graph"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-[10px] border border-white/15 bg-white/[0.03] px-4 py-2 text-[0.8125rem] font-semibold text-app-text no-underline shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-all duration-150 hover:border-white/25 hover:bg-white/[0.06]"
             >
-              {t('knowledge.downloadAll')}
-            </button>
-          ) : null}
-        </div>
-      </div>
-      <p className="mb-4 text-[15px] text-[#9CA3AF]">{t('knowledgeSubtitle')}</p>
+              <Network size={14} />
+              {t('knowledge.graphView')}
+            </Link>
+            {showDownloadAll ? (
+              <button
+                type="button"
+                className="whitespace-nowrap rounded-[10px] border border-white/15 bg-white/[0.03] px-4 py-2 text-[0.8125rem] font-semibold text-app-text shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-all duration-150 hover:border-white/25 hover:bg-white/[0.06]"
+                onClick={() => {
+                  setDownloadErr(null)
+                  setDownloadMode({ type: 'all' })
+                }}
+              >
+                {t('knowledge.downloadAll')}
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       {facetsError ? (
-        <div className="mb-3 text-[0.875rem] text-app-error">
+        <div className="text-[0.875rem] text-app-error">
           <p className="m-0">{t('knowledge.facetsLoadError')}</p>
           <p className="m-0 mt-[0.35rem] text-[0.8rem] text-app-muted">
             {getErrorMessage(facetsError)}
@@ -377,91 +424,46 @@ export function KnowledgePage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[0.82rem] font-medium text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px hover:bg-white/5"
-        >
-          <SlidersHorizontal size={15} />
-          {t('knowledge.filtersButton')}
-        </button>
-      </div>
-
-      {filtersOpen && (
-        <SurfaceContainer className="mb-5 grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] items-end gap-x-4 gap-y-3 p-4">
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.sortByDate')}</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as 'desc' | 'asc')}
-              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
-            >
-              <option value="desc">{t('knowledge.sortNewestFirst')}</option>
-              <option value="asc">{t('knowledge.sortOldestFirst')}</option>
-            </select>
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.filterFrom')}</span>
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
-            />
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.filterTo')}</span>
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
-            />
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('tags')}</span>
-            <select
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
-            >
-              <option value="">{t('knowledge.filterAllTags')}</option>
-              {(facets?.tags ?? []).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('type')}</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text"
-            >
-              <option value="">{t('knowledge.filterAllTypes')}</option>
-              {(facets?.types ?? []).map((ty) => (
-                <option key={ty} value={ty}>
-                  {typeLabel(ty) ?? ty}
-                </option>
-              ))}
-            </select>
-          </label>
-          {hasActiveFilters ? (
-            <div className="flex min-w-0 items-end">
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="h-11 whitespace-nowrap rounded-[10px] border border-[var(--border)] bg-transparent px-[0.875rem] text-[0.8125rem] font-medium text-app-muted transition-all duration-150 ease-in-out hover:-translate-y-px"
-              >
-                {t('knowledge.clearFilters')}
-              </button>
-            </div>
-          ) : null}
-        </SurfaceContainer>
-      )}
+      <FilterPanel
+        open={filtersOpen}
+        onToggle={() => setFiltersOpen((v) => !v)}
+        chips={filterChips}
+        onClearAll={hasActiveFilters || sort !== 'desc' ? clearFilters : undefined}
+        resultCount={listToShow.length}
+      >
+        <FilterField label={t('knowledge.sortByDate')}>
+          <Select value={sort} onChange={(e) => setSort(e.target.value as 'desc' | 'asc')}>
+            <option value="desc">{t('knowledge.sortNewestFirst')}</option>
+            <option value="asc">{t('knowledge.sortOldestFirst')}</option>
+          </Select>
+        </FilterField>
+        <FilterField label={t('knowledge.filterFrom')}>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={fieldClassName} />
+        </FilterField>
+        <FilterField label={t('knowledge.filterTo')}>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={fieldClassName} />
+        </FilterField>
+        <FilterField label={t('tags')}>
+          <Select value={tag} onChange={(e) => setTag(e.target.value)}>
+            <option value="">{t('knowledge.filterAllTags')}</option>
+            {(facets?.tags ?? []).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+        <FilterField label={t('type')}>
+          <Select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">{t('knowledge.filterAllTypes')}</option>
+            {(facets?.types ?? []).map((ty) => (
+              <option key={ty} value={ty}>
+                {typeLabel(ty) ?? ty}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+      </FilterPanel>
 
       {allFolders.length > 0 && (
         <SurfaceContainer className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-5">
@@ -510,9 +512,14 @@ export function KnowledgePage() {
               })}
             </div>
             {listToShow.length === 0 ? (
-              <div className="p-8 text-center text-app-muted">
-                <p>{hasActiveFilters ? t('knowledge.emptyFiltered') : t('knowledgeEmpty')}</p>
-              </div>
+              <EmptyState
+                icon={<BookOpen size={22} />}
+                title={hasActiveFilters ? t('knowledge.emptyFiltered') : t('knowledgeEmpty')}
+                description={hasActiveFilters ? t('knowledge.clearFilters') : t('knowledgeSubtitle')}
+                actionLabel={hasActiveFilters ? t('knowledge.clearFilters') : t('nav.inbox')}
+                actionTo={hasActiveFilters ? undefined : '/inbox'}
+                onAction={hasActiveFilters ? clearFilters : undefined}
+              />
             ) : (
               <ul className="flex list-none flex-col gap-2">{listToShow.map(renderItemRow)}</ul>
             )}

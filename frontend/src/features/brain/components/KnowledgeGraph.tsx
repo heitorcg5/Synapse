@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '@/shared/utils/api-client'
 import { contentApi } from '@/features/content/api/content-api'
 import { brainApi } from '../api/brain-api'
@@ -20,7 +19,6 @@ import {
 } from './graph/types'
 
 export const KnowledgeGraph = () => {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const containerRef = useRef<HTMLDivElement>(null)
   const graphRef = useRef<any>(null)

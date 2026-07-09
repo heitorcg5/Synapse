@@ -8,6 +8,9 @@ import { getErrorMessage } from '@/shared/utils/api-client'
 import DatePicker from 'react-datepicker'
 import { Textarea } from '@/shared/components/ui/Textarea'
 import { Input } from '@/shared/components/ui/Input'
+import { Button } from '@/shared/components/ui/Button'
+import { Select } from '@/shared/components/ui/Select'
+import { fieldClassName, fieldLabelClassName } from '@/shared/components/ui/form-styles'
 import { CalendarDays, Clock3 } from 'lucide-react'
 import 'react-datepicker/dist/react-datepicker.css'
 import './ai-review-datepicker.css'
@@ -15,8 +18,8 @@ import './ai-review-datepicker.css'
 const TYPES: CreateInboxItemRequest['type'][] = ['TEXT', 'VIDEO', 'WEB', 'AUDIO', 'DOCUMENT']
 const CREATE_FOLDER_OPTION = '__create-new-folder__'
 
-const selectClassName =
-  'w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] p-3 text-sm text-app-text outline-none transition-[border-color,box-shadow] duration-150 ease-in-out focus:border-[#7C5CFF] focus:shadow-[0_0_0_2px_rgba(124,92,255,0.18)]'
+const labelClass = `mb-4 flex flex-col gap-[0.35rem] text-[0.9rem] ${fieldLabelClassName}`
+const labelTightClass = `flex flex-col gap-[0.35rem] text-[0.84rem] ${fieldLabelClassName}`
 
 type PanelState = {
   loadingPreview: boolean
@@ -353,16 +356,24 @@ export function AiReviewModal({
   }
 
   return (
-    <div style={styles.backdrop} role="dialog" aria-modal="true">
-      <div style={styles.modal}>
-        <div style={styles.modalHeader}>
-          <div style={styles.modalTitle}>{t('aiReviewTitle')}</div>
-          <button type="button" onClick={onClose} style={styles.closeBtn}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-[820px] overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <div className="text-base font-bold text-app-text">{t('aiReviewTitle')}</div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ui-no-motion rounded-lg border border-[var(--border)] bg-transparent px-2 py-1 text-app-muted"
+          >
             {t('close')}
           </button>
         </div>
 
-        <div style={styles.carousel}>
+        <div className="overflow-hidden">
           <div
             style={{
               display: 'flex',
@@ -372,26 +383,24 @@ export function AiReviewModal({
             }}
           >
             {items.map((it, i) => (
-              <div key={it.id} style={styles.panel}>
-                <div style={styles.panelHeader}>
-                  <div style={styles.panelItemStatus}>{t('statusPending')}</div>
+              <div key={it.id} className="box-border flex-[0_0_100%] p-4">
+                <div className="mb-3 flex items-center justify-end">
+                  <div className="text-[0.8rem] text-app-muted">{t('statusPending')}</div>
                 </div>
 
                 {panelStates[i]?.loadingPreview ? (
-                  <div style={styles.centerText}>
-                    {t('aiPreviewLoading')}
-                  </div>
+                  <div className="py-5 text-app-muted">{t('aiPreviewLoading')}</div>
                 ) : (
                   <>
                     {panelStates[i]?.previewError && (
-                      <div style={styles.errorBanner} role="alert">
+                      <div className="mb-4 rounded-lg bg-app-error/15 px-4 py-3 text-sm text-app-error" role="alert">
                         {panelStates[i]?.previewError}
                       </div>
                     )}
-                    <div style={styles.metaGrid}>
-                      <label style={styles.labelTight}>
+                    <div className="mb-4 grid grid-cols-2 gap-3">
+                      <label className={labelTightClass}>
                         {t('type')}
-                        <select
+                        <Select
                           value={panelStates[i]?.contentType ?? 'TEXT'}
                           disabled={panelStates[i]?.confirming}
                           onChange={(e) => {
@@ -404,18 +413,18 @@ export function AiReviewModal({
                               return next
                             })
                           }}
-                          className={selectClassName}
+                          className={fieldClassName}
                         >
                           {TYPES.map((typeOpt) => (
                             <option key={typeOpt} value={typeOpt}>
                               {typeLabel(typeOpt)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </label>
-                      <label style={styles.labelTight}>
+                      <label className={labelTightClass}>
                         {t('captureFolder')}
-                        <select
+                        <Select
                           value={
                             panelStates[i]?.creatingFolderInline
                               ? CREATE_FOLDER_OPTION
@@ -446,7 +455,7 @@ export function AiReviewModal({
                               return next
                             })
                           }}
-                          className={selectClassName}
+                          className={fieldClassName}
                         >
                           <option value="">{t('captureFolderNone')}</option>
                           {(foldersQuery.data ?? []).map((folder) => (
@@ -455,12 +464,12 @@ export function AiReviewModal({
                             </option>
                           ))}
                           <option value={CREATE_FOLDER_OPTION}>{t('captureFolderCreateOption')}</option>
-                        </select>
+                        </Select>
                       </label>
                     </div>
                     {panelStates[i]?.creatingFolderInline ? (
-                      <div style={styles.inlineFolderBox}>
-                        <label style={styles.labelTight}>
+                      <div className="mb-4 flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[#0E0E15] p-3">
+                        <label className={labelTightClass}>
                           {t('captureNewFolderLabel')}
                           <Input
                             value={panelStates[i]?.newFolderName ?? ''}
@@ -479,23 +488,25 @@ export function AiReviewModal({
                           />
                         </label>
                         {panelStates[i]?.folderError ? (
-                          <p style={styles.inlineFolderError}>{panelStates[i]?.folderError}</p>
+                          <p className="m-0 text-[0.8rem] text-app-error">{panelStates[i]?.folderError}</p>
                         ) : null}
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="self-start"
                           disabled={
                             panelStates[i]?.confirming ||
                             createFolderMutation.isPending ||
                             !panelStates[i]?.newFolderName.trim()
                           }
                           onClick={() => void handleCreateFolder(i)}
-                          style={styles.secondaryBtn}
                         >
                           {t('captureCreateFolder')}
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
-                    <label style={styles.label}>
+                    <label className={labelClass}>
                       {t('title')}
                       <Textarea
                         className="resize-none whitespace-pre-wrap leading-relaxed"
@@ -515,7 +526,7 @@ export function AiReviewModal({
                       />
                     </label>
 
-                    <label style={styles.label}>
+                    <label className={labelClass}>
                       {t('summary')}
                       <Textarea
                         className="h-48 resize-none overflow-x-hidden overflow-y-auto break-words whitespace-pre-wrap leading-relaxed"
@@ -534,7 +545,7 @@ export function AiReviewModal({
                       />
                     </label>
 
-                    <label style={styles.checkboxRow}>
+                    <label className="mt-1 flex items-center gap-2.5 text-[0.9rem] text-app-muted">
                       <input
                         type="checkbox"
                         checked={panelStates[i]?.notificationsEnabled ?? false}
@@ -563,11 +574,11 @@ export function AiReviewModal({
                       <span>{t('notificationsEnabled')}</span>
                     </label>
                     {panelStates[i]?.notificationsEnabled && (
-                      <div style={styles.dateTimeGrid}>
-                        <label style={styles.labelTight}>
+                      <div className="mt-2.5 grid grid-cols-2 gap-3">
+                        <label className={labelTightClass}>
                           {t('notificationsReminderDate')}
-                          <div style={styles.pickerWrap}>
-                            <CalendarDays size={16} style={styles.pickerIcon} />
+                          <div className="relative flex items-center">
+                            <CalendarDays size={16} className="pointer-events-none absolute left-2.5 z-[1] text-[#8f96ad]" />
                             <DatePicker
                               selected={parseReminderDateTime(
                                 panelStates[i]?.reminderDate ?? '',
@@ -594,10 +605,10 @@ export function AiReviewModal({
                             />
                           </div>
                         </label>
-                        <label style={styles.labelTight}>
+                        <label className={labelTightClass}>
                           {t('notificationsReminderTime')}
-                          <div style={styles.pickerWrap}>
-                            <Clock3 size={16} style={styles.pickerIcon} />
+                          <div className="relative flex items-center">
+                            <Clock3 size={16} className="pointer-events-none absolute left-2.5 z-[1] text-[#8f96ad]" />
                             <DatePicker
                               selected={parseReminderDateTime(
                                 panelStates[i]?.reminderDate ?? toLocalDateInputValue(new Date()),
@@ -633,15 +644,10 @@ export function AiReviewModal({
                 )}
 
                 {i === index && (
-                  <div style={styles.footerActions}>
-                    <button
-                      type="button"
-                      disabled={!canConfirm}
-                      onClick={handleConfirmCurrent}
-                      style={styles.primaryBtn}
-                    >
+                  <div className="mt-4 flex justify-end border-t border-[var(--border)] pt-4">
+                    <Button type="button" disabled={!canConfirm} onClick={handleConfirmCurrent} className="min-w-[11rem]">
                       {buttonLabel}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -651,173 +657,5 @@ export function AiReviewModal({
       </div>
     </div>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  backdrop: {
-    position: 'fixed',
-    inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '1rem',
-    zIndex: 60,
-  },
-  modal: {
-    width: 'min(820px, 100%)',
-    backgroundColor: 'var(--surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 14,
-    boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0.75rem 1rem',
-    borderBottom: '1px solid var(--border)',
-  },
-  modalTitle: {
-    fontWeight: 700,
-    fontSize: '1rem',
-  },
-  closeBtn: {
-    border: '1px solid var(--border)',
-    backgroundColor: 'transparent',
-    color: 'var(--text-muted)',
-    borderRadius: 8,
-    padding: '0.25rem 0.5rem',
-    cursor: 'pointer',
-  },
-  carousel: {
-    overflow: 'hidden',
-  },
-  panel: {
-    flex: '0 0 100%',
-    padding: '1rem',
-    boxSizing: 'border-box',
-  },
-  panelHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: '0.75rem',
-  },
-  panelItemType: {
-    fontWeight: 600,
-    color: 'var(--text)',
-  },
-  metaGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0.75rem',
-    marginBottom: '1rem',
-  },
-  inlineFolderBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-    marginBottom: '1rem',
-    padding: '0.75rem',
-    borderRadius: 12,
-    border: '1px solid var(--border)',
-    backgroundColor: '#0E0E15',
-  },
-  inlineFolderError: {
-    margin: 0,
-    fontSize: '0.8rem',
-    color: 'var(--error)',
-  },
-  secondaryBtn: {
-    alignSelf: 'flex-start',
-    padding: '0.45rem 0.75rem',
-    borderRadius: 8,
-    border: '1px solid var(--border)',
-    backgroundColor: 'transparent',
-    color: 'var(--text)',
-    fontWeight: 600,
-    fontSize: '0.85rem',
-    cursor: 'pointer',
-  },
-  panelItemStatus: {
-    fontSize: '0.8rem',
-    color: 'var(--text-muted)',
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.35rem',
-    marginBottom: '1rem',
-    color: 'var(--text-muted)',
-    fontSize: '0.9rem',
-  },
-  checkboxRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.6rem',
-    marginTop: '0.25rem',
-    color: 'var(--text-muted)',
-    fontSize: '0.9rem',
-  },
-  dateTimeGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0.75rem',
-    marginTop: '0.6rem',
-  },
-  labelTight: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.35rem',
-    color: 'var(--text-muted)',
-    fontSize: '0.84rem',
-  },
-  pickerWrap: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  pickerIcon: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 1,
-    color: '#8f96ad',
-    pointerEvents: 'none',
-  },
-  footerActions: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    paddingTop: '0.5rem',
-    borderTop: '1px solid var(--border)',
-    marginTop: '1rem',
-  },
-  primaryBtn: {
-    padding: '0.65rem 1rem',
-    borderRadius: 10,
-    border: 'none',
-    backgroundColor: 'var(--accent)',
-    color: 'white',
-    fontWeight: 600,
-    cursor: 'pointer',
-    minWidth: 180,
-  },
-  centerText: {
-    color: 'var(--text-muted)',
-    padding: '1.25rem 0',
-  },
-  errorText: {
-    color: 'var(--error)',
-    padding: '1.25rem 0',
-  },
-  errorBanner: {
-    color: 'var(--error)',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    padding: '0.75rem 1rem',
-    borderRadius: 8,
-    marginBottom: '1rem',
-    fontSize: '0.9rem',
-  },
 }
 

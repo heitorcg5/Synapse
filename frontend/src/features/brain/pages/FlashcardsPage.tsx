@@ -1,12 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { SlidersHorizontal } from 'lucide-react'
+import { Layers } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/auth-context'
 import { userApi } from '@/features/profile/api/user-api'
 import { contentApi } from '@/features/content/api/content-api'
 import { brainApi } from '../api/brain-api'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
+import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { FilterPanel, type ActiveFilterChip } from '@/shared/components/ui/FilterPanel'
+import { FilterField } from '@/shared/components/ui/FilterField'
+import { Select } from '@/shared/components/ui/Select'
+import { Button } from '@/shared/components/ui/Button'
+import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { fieldClassName } from '@/shared/components/ui/form-styles'
 import type { KnowledgeFolderResponse, KnowledgeItemResponse } from '@/shared/types/knowledge.types'
 
 function shuffleIds(ids: string[]): string[] {
@@ -28,6 +35,7 @@ function toDateOnly(value?: string | null): string {
 }
 
 type FlashcardsPhase = 'main' | 'retry' | 'complete'
+type SessionMode = 'main' | 'retry'
 
 type FlashcardsState = {
   from: string
@@ -39,14 +47,12 @@ type FlashcardsState = {
   currentIndex: number
   showSummary: boolean
   phase: FlashcardsPhase
+  sessionMode: SessionMode
   mainFailedIds: string[]
   retryFailedIds: string[]
 }
 
 const STORAGE_KEY = 'synapse.flashcards.v2'
-
-const selectClassName =
-  'h-11 w-full rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-[0.875rem] leading-[1.25] text-app-text'
 
 export function FlashcardsPage() {
   const { t } = useTranslation()
@@ -60,10 +66,17 @@ export function FlashcardsPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showSummary, setShowSummary] = useState(false)
   const [phase, setPhase] = useState<FlashcardsPhase>('main')
+  const [sessionMode, setSessionMode] = useState<SessionMode>('main')
   const [mainFailedIds, setMainFailedIds] = useState<string[]>([])
   const [retryFailedIds, setRetryFailedIds] = useState<string[]>([])
   const [hydrated, setHydrated] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const prevFilterKeyRef = useRef<string | null>(null)
+
+  const filterKey = useMemo(
+    () => [from, to, type, tag, folderId].join('|'),
+    [folderId, from, tag, to, type],
+  )
 
   const { data: profile } = useQuery({
     queryKey: ['user-profile', token ?? ''] as const,
@@ -147,25 +160,18 @@ export function FlashcardsPage() {
     setCurrentIndex(0)
     setShowSummary(false)
     setPhase('main')
+    setSessionMode('main')
     setMainFailedIds([])
     setRetryFailedIds([])
   }
 
-  const startRetrySession = () => {
-    const pool = mainFailedIds.filter((id) => itemById.has(id))
+  const reviewFailedCards = () => {
+    const pool = (sessionMode === 'main' ? mainFailedIds : retryFailedIds).filter((id) => itemById.has(id))
     setSessionOrder(shuffleIds(pool))
     setCurrentIndex(0)
     setShowSummary(false)
     setPhase('retry')
-    setRetryFailedIds([])
-  }
-
-  const runRetryAgain = () => {
-    const pool = retryFailedIds.filter((id) => itemById.has(id))
-    setSessionOrder(shuffleIds(pool))
-    setCurrentIndex(0)
-    setShowSummary(false)
-    setPhase('retry')
+    setSessionMode('retry')
     setRetryFailedIds([])
   }
 
@@ -190,6 +196,7 @@ export function FlashcardsPage() {
         setCurrentIndex(parsed.currentIndex ?? 0)
         setShowSummary(Boolean(parsed.showSummary))
         setPhase(parsed.phase ?? 'main')
+        setSessionMode(parsed.sessionMode ?? (parsed.phase === 'retry' ? 'retry' : 'main'))
         setMainFailedIds(parsed.mainFailedIds ?? [])
         setRetryFailedIds(parsed.retryFailedIds ?? [])
       }
@@ -202,6 +209,41 @@ export function FlashcardsPage() {
 
   useEffect(() => {
     if (!hydrated) return
+
+    if (prevFilterKeyRef.current === null) {
+      prevFilterKeyRef.current = filterKey
+      if (filteredItems.length === 0) {
+        setSessionOrder([])
+        setCurrentIndex(0)
+        setShowSummary(false)
+        setPhase('main')
+        setMainFailedIds([])
+        setRetryFailedIds([])
+        return
+      }
+      const validIds = new Set(filteredItems.map((item) => item.id))
+      const hasInvalidSessionCard = sessionOrder.some((id) => !validIds.has(id))
+      if (sessionOrder.length === 0 || hasInvalidSessionCard) {
+        resetMainSession()
+      }
+      return
+    }
+
+    if (prevFilterKeyRef.current !== filterKey) {
+      prevFilterKeyRef.current = filterKey
+      if (filteredItems.length === 0) {
+        setSessionOrder([])
+        setCurrentIndex(0)
+        setShowSummary(false)
+        setPhase('main')
+        setMainFailedIds([])
+        setRetryFailedIds([])
+      } else {
+        resetMainSession()
+      }
+      return
+    }
+
     if (filteredItems.length === 0) {
       setSessionOrder([])
       setCurrentIndex(0)
@@ -211,6 +253,7 @@ export function FlashcardsPage() {
       setRetryFailedIds([])
       return
     }
+
     const validIds = new Set(filteredItems.map((item) => item.id))
     const hasInvalidSessionCard = sessionOrder.some((id) => !validIds.has(id))
     const currentId = sessionOrder[currentIndex]
@@ -221,7 +264,7 @@ export function FlashcardsPage() {
     }
     setMainFailedIds((prev) => prev.filter((id) => validIds.has(id)))
     setRetryFailedIds((prev) => prev.filter((id) => validIds.has(id)))
-  }, [currentIndex, filteredItems, hydrated, sessionOrder])
+  }, [currentIndex, filterKey, filteredItems, hydrated, sessionOrder])
 
   useEffect(() => {
     if (!hydrated) return
@@ -235,6 +278,7 @@ export function FlashcardsPage() {
       currentIndex,
       showSummary,
       phase,
+      sessionMode,
       mainFailedIds,
       retryFailedIds,
     }
@@ -247,6 +291,7 @@ export function FlashcardsPage() {
     mainFailedIds,
     phase,
     retryFailedIds,
+    sessionMode,
     sessionOrder,
     showSummary,
     tag,
@@ -288,220 +333,266 @@ export function FlashcardsPage() {
     setFolderId('')
   }
 
+  const failedCount =
+    sessionMode === 'main' ? mainFailedIds.length : retryFailedIds.length
+  const canReviewFailed =
+    phase === 'complete' &&
+    sessionOrder.length > 0 &&
+    currentIndex >= sessionOrder.length &&
+    failedCount > 0
+
   const typeLabel = (raw?: string | null) =>
     raw ? t(`contentTypes.${raw}`, { defaultValue: raw }) : null
+
+  const filterChips = useMemo((): ActiveFilterChip[] => {
+    const chips: ActiveFilterChip[] = []
+    if (from) {
+      chips.push({
+        id: 'from',
+        label: `${t('knowledge.filterFrom')}: ${from}`,
+        onRemove: () => setFrom(''),
+      })
+    }
+    if (to) {
+      chips.push({
+        id: 'to',
+        label: `${t('knowledge.filterTo')}: ${to}`,
+        onRemove: () => setTo(''),
+      })
+    }
+    if (type) {
+      chips.push({
+        id: 'type',
+        label: `${t('type')}: ${typeLabel(type) ?? type}`,
+        onRemove: () => setType(''),
+      })
+    }
+    if (tag) {
+      chips.push({
+        id: 'tag',
+        label: `${t('tags')}: ${tag}`,
+        onRemove: () => setTag(''),
+      })
+    }
+    if (folderId) {
+      const folderName = allFolders.find((f) => f.id === folderId)?.name ?? folderId
+      chips.push({
+        id: 'folder',
+        label: `${t('knowledge.folderColumn')}: ${folderName}`,
+        onRemove: () => setFolderId(''),
+      })
+    }
+    return chips
+  }, [allFolders, folderId, from, tag, to, type, t])
+
+  const progressPercent =
+    sessionOrder.length > 0 ? Math.round(((currentIndex + 1) / sessionOrder.length) * 100) : 0
+
+  useEffect(() => {
+    if (currentCard && !isFinished) {
+      setFiltersOpen(false)
+    }
+  }, [currentCard?.id, isFinished])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!currentCard || isFinished) return
+      const target = event.target as HTMLElement | null
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') {
+        return
+      }
+      if (event.key === ' ' || event.key === 'Spacebar') {
+        event.preventDefault()
+        if (!showSummary) setShowSummary(true)
+        return
+      }
+      if (!showSummary) return
+      if (event.key === 'ArrowLeft' || event.key === '1') {
+        event.preventDefault()
+        markAnswer(false)
+      }
+      if (event.key === 'ArrowRight' || event.key === '2') {
+        event.preventDefault()
+        markAnswer(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [currentCard, isFinished, showSummary, currentIndex, sessionOrder.length])
 
   if (!token) return <p className="text-app-muted">{t('loading')}</p>
   if (isPending) return <p className="text-app-muted">{t('loading')}</p>
 
   return (
     <div className="w-full max-w-full space-y-5">
-      <div>
-        <h1 className="m-0 text-[28px] font-semibold leading-[1.3] tracking-[-0.02em] text-app-text">
-          {t('flashcards.title')}
-        </h1>
-        <p className="mb-0 mt-2 text-[15px] text-[#9CA3AF]">{t('flashcards.subtitle')}</p>
-      </div>
+      <PageHeader title={t('flashcards.title')} subtitle={t('flashcards.subtitle')} />
 
-      <div className="flex items-center justify-end gap-2">
-        {hasActiveFilters && !filtersOpen ? (
-          <span className="text-[0.8rem] text-app-muted">{t('flashcards.filtersActive')}</span>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[0.82rem] font-medium text-app-text transition-all duration-150 ease-in-out hover:-translate-y-px hover:bg-white/5"
-        >
-          <SlidersHorizontal size={15} />
-          {t('knowledge.filtersButton')}
-        </button>
-      </div>
-
-      {filtersOpen ? (
-        <SurfaceContainer className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] items-end gap-x-4 gap-y-3 p-4">
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.filterFrom')}</span>
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className={selectClassName}
-            />
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.filterTo')}</span>
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className={selectClassName}
-            />
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('type')}</span>
-            <select value={type} onChange={(e) => setType(e.target.value)} className={selectClassName}>
-              <option value="">{t('knowledge.filterAllTypes')}</option>
-              {(facets?.types ?? []).map((ty) => (
-                <option key={ty} value={ty}>
-                  {typeLabel(ty) ?? ty}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('tags')}</span>
-            <select value={tag} onChange={(e) => setTag(e.target.value)} className={selectClassName}>
-              <option value="">{t('knowledge.filterAllTags')}</option>
-              {(facets?.tags ?? []).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex min-w-0 flex-col gap-[0.35rem]">
-            <span className="text-[13px] font-medium leading-[1.3] text-app-muted">{t('knowledge.folderColumn')}</span>
-            <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={selectClassName}>
-              <option value="">{t('knowledge.allFolder')}</option>
-              {allFolders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {hasActiveFilters ? (
-            <div className="flex min-w-0 items-end">
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="h-11 whitespace-nowrap rounded-[10px] border border-[var(--border)] bg-transparent px-[0.875rem] text-[0.8125rem] font-medium text-app-muted transition-all duration-150 ease-in-out hover:-translate-y-px"
-              >
-                {t('knowledge.clearFilters')}
-              </button>
-            </div>
-          ) : null}
-        </SurfaceContainer>
-      ) : null}
+      <FilterPanel
+        open={filtersOpen}
+        onToggle={() => setFiltersOpen((v) => !v)}
+        chips={filterChips}
+        onClearAll={hasActiveFilters ? clearFilters : undefined}
+        resultCount={filteredItems.length}
+      >
+        <FilterField label={t('knowledge.filterFrom')}>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={fieldClassName} />
+        </FilterField>
+        <FilterField label={t('knowledge.filterTo')}>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={fieldClassName} />
+        </FilterField>
+        <FilterField label={t('type')}>
+          <Select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">{t('knowledge.filterAllTypes')}</option>
+            {(facets?.types ?? []).map((ty) => (
+              <option key={ty} value={ty}>
+                {typeLabel(ty) ?? ty}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+        <FilterField label={t('tags')}>
+          <Select value={tag} onChange={(e) => setTag(e.target.value)}>
+            <option value="">{t('knowledge.filterAllTags')}</option>
+            {(facets?.tags ?? []).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+        <FilterField label={t('knowledge.folderColumn')}>
+          <Select value={folderId} onChange={(e) => setFolderId(e.target.value)}>
+            <option value="">{t('knowledge.allFolder')}</option>
+            {allFolders.map((folder) => (
+              <option key={folder.id} value={folder.id}>
+                {folder.name}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+      </FilterPanel>
 
       {filteredItems.length === 0 ? (
-        <SurfaceContainer className="p-8 text-center text-app-muted">
-          {t('flashcards.emptyFiltered')}
-        </SurfaceContainer>
+        <EmptyState
+          icon={<Layers size={22} />}
+          title={t('flashcards.emptyFiltered')}
+          description={hasActiveFilters ? t('knowledge.emptyFiltered') : t('knowledgeEmpty')}
+          actionLabel={hasActiveFilters ? t('knowledge.clearFilters') : t('nav.knowledge')}
+          actionTo={hasActiveFilters ? undefined : '/knowledge'}
+          onAction={hasActiveFilters ? clearFilters : undefined}
+        />
       ) : isFinished || !currentCard ? (
-        <SurfaceContainer className="space-y-4 p-8 text-center">
+        <SurfaceContainer className="mx-auto max-w-xl space-y-5 p-8 text-center">
           <p className="m-0 text-lg font-semibold text-app-text">{t('flashcards.finishedTitle')}</p>
           <p className="m-0 text-app-muted">
-            {phase === 'main'
+            {sessionMode === 'main'
               ? t('flashcards.finishedMainSubtitle', { failed: mainFailedIds.length })
               : t('flashcards.finishedRetrySubtitle', { failed: retryFailedIds.length })}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {phase === 'complete' && mainFailedIds.length > 0 && sessionOrder.length > 0 && currentIndex >= sessionOrder.length ? (
-              <button
-                type="button"
-                onClick={startRetrySession}
-                className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white"
-              >
+            {canReviewFailed ? (
+              <Button type="button" onClick={reviewFailedCards}>
                 {t('flashcards.reviewFailed')}
-              </button>
+              </Button>
             ) : null}
-            {phase === 'complete' && retryFailedIds.length > 0 && sessionOrder.length > 0 && currentIndex >= sessionOrder.length ? (
-              <button
-                type="button"
-                onClick={runRetryAgain}
-                className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white"
-              >
-                {t('flashcards.reviewFailedAgain')}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={resetMainSession}
-              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-app-text"
-            >
+            <Button type="button" variant="ghost" onClick={resetMainSession}>
               {t('flashcards.restart')}
-            </button>
+            </Button>
           </div>
         </SurfaceContainer>
       ) : (
-        <SurfaceContainer className="space-y-5 p-5">
-          <div className="flex items-center justify-between text-sm text-app-muted">
-            <span>
-              {t('flashcards.progress', {
-                current: currentIndex + 1,
-                total: sessionOrder.length,
-              })}
-            </span>
-            <span>
-              {phase === 'retry' ? t('flashcards.retryMode') : t('flashcards.mainMode')} ·{' '}
-              {t('flashcards.remaining', { count: remaining })}
-            </span>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border)] bg-[#101018] p-5">
-            <p className="mb-2 text-xs uppercase tracking-wide text-app-muted">{t('flashcards.front')}</p>
-            <h2 className="m-0 text-xl font-semibold text-app-text">
-              {currentCard.title || t('untitledNote')}
-            </h2>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border)] bg-[#101018] p-5">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="m-0 text-xs uppercase tracking-wide text-app-muted">{t('flashcards.back')}</p>
-              <button
-                type="button"
-                onClick={() => setShowSummary((v) => !v)}
-                className="text-xs font-semibold text-brand-purple"
-              >
-                {showSummary ? t('flashcards.hideSummary') : t('flashcards.showSummary')}
-              </button>
+        <div className="mx-auto max-w-2xl space-y-5">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-app-muted">
+              <span>
+                {t('flashcards.progress', {
+                  current: currentIndex + 1,
+                  total: sessionOrder.length,
+                })}
+              </span>
+              <span>
+                {phase === 'retry' ? t('flashcards.retryMode') : t('flashcards.mainMode')} ·{' '}
+                {t('flashcards.remaining', { count: remaining })}
+              </span>
             </div>
-            {showSummary ? (
-              <p className="m-0 whitespace-pre-wrap text-app-text">
-                {currentCard.summary?.trim() || t('noSummaryYet')}
-              </p>
-            ) : (
-              <p className="m-0 text-app-muted">{t('flashcards.hiddenSummaryHint')}</p>
-            )}
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-brand-purple to-brand-cyan transition-[width] duration-300 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div
+            className="flashcard-scene w-full"
+            role="presentation"
+          >
+            <div
+              className={`flashcard ${showSummary ? 'flashcard--flipped' : ''} ${!showSummary ? 'cursor-pointer' : ''}`}
+              onClick={() => !showSummary && setShowSummary(true)}
+              onKeyDown={(e) => {
+                if (!showSummary && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  setShowSummary(true)
+                }
+              }}
+              role={!showSummary ? 'button' : undefined}
+              tabIndex={!showSummary ? 0 : undefined}
+              aria-label={showSummary ? t('flashcards.back') : t('flashcards.front')}
+            >
+              <SurfaceContainer className="flashcard-face flex flex-col justify-start p-8">
+                <p className="mb-2 shrink-0 text-xs font-semibold uppercase tracking-wide text-app-muted">
+                  {t('flashcards.front')}
+                </p>
+                <div className="app-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+                  <h2 className="m-0 text-2xl font-semibold leading-snug text-app-text">
+                    {currentCard.title || t('untitledNote')}
+                  </h2>
+                  {!showSummary ? (
+                    <p className="mb-0 mt-6 text-sm text-app-muted">{t('flashcards.tapToReveal')}</p>
+                  ) : null}
+                </div>
+              </SurfaceContainer>
+              <SurfaceContainer className="flashcard-face flashcard-back flex flex-col justify-start p-8">
+                <p className="mb-2 shrink-0 text-xs font-semibold uppercase tracking-wide text-app-muted">
+                  {t('flashcards.back')}
+                </p>
+                <div className="app-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+                  <p className="m-0 whitespace-pre-wrap break-words text-base leading-relaxed text-app-text">
+                    {currentCard.summary?.trim() || t('noSummaryYet')}
+                  </p>
+                </div>
+              </SurfaceContainer>
+            </div>
+          </div>
+
+          <p className="m-0 text-center text-xs text-app-muted">{t('flashcards.keyboardHint')}</p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {!showSummary ? (
-              <button
-                type="button"
-                onClick={() => setShowSummary(true)}
-                className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white"
-              >
+              <Button type="button" className="min-w-[10rem]" onClick={() => setShowSummary(true)}>
                 {t('flashcards.reveal')}
-              </button>
+              </Button>
             ) : (
               <>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  className="min-w-[9rem] border-app-error/40 text-app-error hover:border-app-error/60 hover:bg-app-error/10"
                   onClick={() => markAnswer(false)}
-                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-app-text"
                 >
                   {t('flashcards.incorrect')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => markAnswer(true)}
-                  className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white"
-                >
+                </Button>
+                <Button type="button" className="min-w-[9rem]" onClick={() => markAnswer(true)}>
                   {t('flashcards.correct')}
-                </button>
+                </Button>
               </>
             )}
-            <button
-              type="button"
-              onClick={resetMainSession}
-              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-app-text"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={resetMainSession}>
               {t('flashcards.restart')}
-            </button>
+            </Button>
           </div>
-        </SurfaceContainer>
+        </div>
       )}
     </div>
   )

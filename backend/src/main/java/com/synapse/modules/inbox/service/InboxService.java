@@ -11,6 +11,7 @@ import com.synapse.modules.inbox.dto.TagResponse;
 import com.synapse.modules.inbox.entity.InboxItem;
 import com.synapse.modules.inbox.entity.InboxFolder;
 import com.synapse.modules.inbox.entity.InboxItemTag;
+import com.synapse.modules.inbox.entity.Tag;
 import com.synapse.modules.inbox.repository.InboxFolderRepository;
 import com.synapse.modules.inbox.repository.InboxItemRepository;
 import com.synapse.modules.inbox.repository.InboxItemTagRepository;
@@ -27,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +45,7 @@ public class InboxService {
     private static final String STATUS_PROCESSING = "PROCESSING";
     private static final String STATUS_READY = "READY";
     private static final String STATUS_FAILED = "FAILED";
+    private static final int LIST_PREVIEW_MAX_CHARS = 220;
 
     private final InboxItemRepository inboxItemRepository;
     private final InboxFolderRepository contentFolderRepository;
@@ -135,8 +139,16 @@ public class InboxService {
                 userId,
                 rows.stream().map(InboxItem::getFolderId).collect(Collectors.toSet())
         );
+        Set<UUID> inboxIds = rows.stream().map(InboxItem::getId).collect(Collectors.toSet());
+        Map<UUID, String> summaryPreviews = loadSummaryPreviews(inboxIds);
+        Map<UUID, List<String>> tagsByInbox = loadTagsByInboxIds(inboxIds);
         return rows.stream()
-                .map(content -> toResponse(content, folderNames))
+                .map(content -> toListResponse(
+                        content,
+                        folderNames,
+                        summaryPreviews.get(content.getId()),
+                        tagsByInbox.getOrDefault(content.getId(), List.of())
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -260,5 +272,77 @@ public class InboxService {
                 .status(content.getStatus())
                 .capturedAt(content.getCapturedAt())
                 .build();
+    }
+
+    /** Inbox list: lightweight previews only — capture is not finalized as knowledge yet. */
+    private InboxItemResponse toListResponse(
+            InboxItem content,
+            Map<UUID, String> folderNames,
+            String summaryPreview,
+            List<String> tags
+    ) {
+        return InboxItemResponse.builder()
+                .id(content.getId())
+                .userId(content.getUserId())
+                .type(content.getType())
+                .sourceUrl(content.getSourceUrl())
+                .language(content.getLanguage())
+                .title(content.getTitle())
+                .notificationsEnabled(content.getNotificationsEnabled())
+                .notificationReminderAt(content.getNotificationReminderAt())
+                .folderId(content.getFolderId())
+                .folderName(content.getFolderId() != null ? folderNames.get(content.getFolderId()) : null)
+                .status(content.getStatus())
+                .capturedAt(content.getCapturedAt())
+                .contentPreview(truncatePreview(content.getRawContent()))
+                .summaryPreview(summaryPreview)
+                .tags(tags.isEmpty() ? null : tags)
+                .build();
+    }
+
+    private Map<UUID, String> loadSummaryPreviews(Set<UUID> inboxIds) {
+        if (inboxIds.isEmpty()) {
+            return Map.of();
+        }
+        return summaryRepository.findByInboxItemIdIn(inboxIds).stream()
+                .filter(s -> s.getSummaryText() != null && !s.getSummaryText().isBlank())
+                .collect(Collectors.toMap(
+                        Summary::getInboxItemId,
+                        s -> truncatePreview(s.getSummaryText()),
+                        (a, b) -> a
+                ));
+    }
+
+    private Map<UUID, List<String>> loadTagsByInboxIds(Set<UUID> inboxIds) {
+        if (inboxIds.isEmpty()) {
+            return Map.of();
+        }
+        List<InboxItemTag> rows = contentTagRepository.findByInboxItemIdIn(inboxIds);
+        if (rows.isEmpty()) {
+            return Map.of();
+        }
+        Set<UUID> tagIds = rows.stream().map(InboxItemTag::getTagId).collect(Collectors.toSet());
+        Map<UUID, String> tagNames = tagRepository.findAllById(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, Tag::getName));
+        Map<UUID, List<String>> byInbox = new HashMap<>();
+        for (InboxItemTag row : rows) {
+            String name = tagNames.get(row.getTagId());
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            byInbox.computeIfAbsent(row.getInboxItemId(), ignored -> new ArrayList<>()).add(name);
+        }
+        return byInbox;
+    }
+
+    private static String truncatePreview(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String normalized = text.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= LIST_PREVIEW_MAX_CHARS) {
+            return normalized;
+        }
+        return normalized.substring(0, LIST_PREVIEW_MAX_CHARS) + "…";
     }
 }

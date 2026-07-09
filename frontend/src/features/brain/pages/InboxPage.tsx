@@ -1,17 +1,21 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { Inbox } from 'lucide-react'
 import type { InboxItemResponse } from '@/shared/types/inbox.types'
 import { AiReviewModal } from '@/features/content/components/AiReviewModal'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useInboxList } from '../hooks/useInboxList'
 import { contentApi } from '@/features/content/api/content-api'
+import { userApi } from '@/features/profile/api/user-api'
 import { getErrorMessage } from '@/shared/utils/api-client'
+import { formatUserDateTime } from '@/shared/preferences/user-datetime'
 import { SurfaceContainer } from '@/shared/components/ui/SurfaceContainer'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Select } from '@/shared/components/ui/Select'
 import { useSSE } from '@/shared/hooks/useSSE'
 import { useAuth } from '@/app/auth-context'
+import { InboxListItem } from '../components/InboxListItem'
 
 const STATUS_KEYS: Record<string, string> = {
   READY: 'statusReady',
@@ -22,15 +26,38 @@ const STATUS_KEYS: Record<string, string> = {
 }
 
 export function InboxPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data: pendingContents, isLoading, error } = useInboxList()
+  const { token } = useAuth()
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', token ?? ''] as const,
+    queryFn: () => userApi.getMe().then((r) => r.data),
+    enabled: !!token,
+  })
+  const effectiveTimezone = useMemo(() => {
+    const z = profile?.preferredTimezone?.trim()
+    if (z) return z
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone
+    } catch {
+      return undefined
+    }
+  }, [profile?.preferredTimezone])
+  const formatPrefs = useMemo(
+    () => ({
+      dateFormat: profile?.dateFormat,
+      timeFormat: profile?.timeFormat,
+      timeZone: effectiveTimezone,
+    }),
+    [profile?.dateFormat, profile?.timeFormat, effectiveTimezone],
+  )
+  const formatCapturedAt = (iso: string) => formatUserDateTime(iso, i18n.language, formatPrefs)
   const { data: contentFolders = [] } = useQuery({
     queryKey: ['content-folders'],
     queryFn: () => contentApi.contentFolders().then((r) => r.data),
   })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { token } = useAuth()
   const sseEvents = useSSE(token)
 
   useEffect(() => {
@@ -245,121 +272,114 @@ export function InboxPage() {
         <div className="space-y-5">
           <SurfaceContainer className="mb-0">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-app-muted">{t('pendingSection')}</h3>
-            <ul className="flex list-none flex-col gap-2">
-              {pendingOrFailed.map((c) => (
-                <li
-                  key={c.id}
-                  className={
-                    selectedProcessIds.includes(c.id)
-                      ? 'overflow-hidden rounded-lg border border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.10)]'
-                      : 'overflow-hidden rounded-lg border border-[var(--border)]'
-                  }
-                >
-                  <div className="flex items-center gap-4 p-4">
-                    <input
-                      id={`process-${c.id}`}
-                      type="checkbox"
-                      checked={selectedProcessIds.includes(c.id)}
-                      onChange={() => toggleSelectedForProcessing(c.id)}
-                    />
-                    <label htmlFor={`process-${c.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-4">
-                      <span className="min-w-[80px] font-medium text-app-text">{c.type}</span>
-                      <span className="text-sm text-app-muted">{translateStatus(c.status)}</span>
-                    </label>
-                    <button
-                      type="button"
-                      className="rounded-md bg-brand-purple px-[0.65rem] py-[0.35rem] text-[0.8rem] font-semibold text-white transition-all duration-150 ease-in-out hover:-translate-y-px"
-                      disabled={runPipelineMutation.isPending}
-                      onClick={() => runPipelineMutation.mutate(c.id)}
-                    >
-                      {t('inboxRunProcessing')}
-                    </button>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {pendingOrFailed.length === 0 ? (
+              <p className="m-0 text-sm text-app-muted">{t('inboxSectionEmptyPending')}</p>
+            ) : (
+              <ul className="flex list-none flex-col gap-2">
+                {pendingOrFailed.map((c) => (
+                  <InboxListItem
+                    key={c.id}
+                    item={c}
+                    selected={selectedProcessIds.includes(c.id)}
+                    checkboxId={`process-${c.id}`}
+                    checked={selectedProcessIds.includes(c.id)}
+                    onToggleSelect={() => toggleSelectedForProcessing(c.id)}
+                    formattedDate={formatCapturedAt(c.capturedAt)}
+                    statusLabel={translateStatus(c.status)}
+                    actions={
+                      <button
+                        type="button"
+                        className="whitespace-nowrap rounded-md bg-brand-purple px-3 py-1.5 text-[0.8rem] font-semibold text-white"
+                        disabled={runPipelineMutation.isPending}
+                        onClick={() => runPipelineMutation.mutate(c.id)}
+                      >
+                        {t('inboxRunProcessing')}
+                      </button>
+                    }
+                  />
+                ))}
+              </ul>
+            )}
           </SurfaceContainer>
 
           <SurfaceContainer className="mb-0">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-app-muted">{t('processingSection')}</h3>
-            <ul className="flex list-none flex-col gap-2">
-              {processing.map((c) => (
-                <li key={c.id} className="overflow-hidden rounded-lg border border-[var(--border)]">
-                  <div className="flex items-center gap-4 p-4">
-                    <span className="min-w-[80px] font-medium text-app-text">{c.type}</span>
-                    <span className="text-sm text-app-muted">{translateStatus(c.status)}</span>
-                    <span className="text-xs text-brand-cyan">{t('aiPreviewLoading')}</span>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {processing.length === 0 ? (
+              <p className="m-0 text-sm text-app-muted">{t('inboxSectionEmptyProcessing')}</p>
+            ) : (
+              <ul className="flex list-none flex-col gap-2">
+                {processing.map((c) => (
+                  <InboxListItem
+                    key={c.id}
+                    item={c}
+                    formattedDate={formatCapturedAt(c.capturedAt)}
+                    statusLabel={translateStatus(c.status)}
+                    processingHint={t('aiPreviewLoading')}
+                  />
+                ))}
+              </ul>
+            )}
           </SurfaceContainer>
 
           <SurfaceContainer className="mb-0">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-app-muted">{t('analyzedSection')}</h3>
-            <ul className="flex list-none flex-col gap-2">
-              {ready.map((c) => (
-                <li
-                  key={c.id}
-                  className={
-                    selectedReviewIds.includes(c.id)
-                      ? 'overflow-hidden rounded-lg border border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.10)]'
-                      : 'overflow-hidden rounded-lg border border-[var(--border)]'
-                  }
-                >
-                  <div className="flex items-center gap-4 p-4">
-                    <input
-                      id={`review-${c.id}`}
-                      type="checkbox"
-                      checked={selectedReviewIds.includes(c.id)}
-                      onChange={() => toggleSelectedForReview(c.id)}
-                    />
-                    <label htmlFor={`review-${c.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-4">
-                      <span className="min-w-[80px] font-medium text-app-text">{c.type}</span>
-                      <span className="text-sm text-app-muted">{translateStatus(c.status)}</span>
-                    </label>
-                    <label className="sr-only" htmlFor={`folder-${c.id}`}>
-                      {t('captureFolder')}
-                    </label>
-                    <select
-                      id={`folder-${c.id}`}
-                      value={c.folderId ?? ''}
-                      onChange={(e) =>
-                        assignFolderMutation.mutate({
-                          inboxItemId: c.id,
-                          folderId: e.target.value || null,
-                        })
-                      }
-                      className="h-10 min-w-[160px] rounded-[10px] border border-[rgba(255,255,255,0.06)] bg-[#101018] px-3 text-xs text-app-text outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-in-out focus:border-[#7C5CFF] focus:shadow-[0_0_0_2px_rgba(124,92,255,0.18)]"
-                    >
-                      <option value="">{t('captureFolderNone')}</option>
-                      {contentFolders.map((folder) => (
-                        <option key={folder.id} value={folder.id}>
-                          {folder.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[0.8rem] text-brand-purple transition-all duration-150 ease-in-out hover:-translate-y-px"
-                      onClick={() => openSingleReviewModal(c)}
-                    >
-                      {t('reviewOne')}
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[0.8rem] text-brand-purple transition-all duration-150 ease-in-out hover:-translate-y-px"
-                      onClick={() => navigate(`/inbox/${c.id}`)}
-                    >
-                      {t('details')}
-                    </button>
-                    <span className="ml-auto text-sm text-app-muted">{new Date(c.capturedAt).toLocaleDateString()}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {ready.length === 0 ? (
+              <p className="m-0 text-sm text-app-muted">{t('inboxSectionEmptyReady')}</p>
+            ) : (
+              <ul className="flex list-none flex-col gap-2">
+                {ready.map((c) => (
+                  <InboxListItem
+                    key={c.id}
+                    item={c}
+                    selected={selectedReviewIds.includes(c.id)}
+                    checkboxId={`review-${c.id}`}
+                    checked={selectedReviewIds.includes(c.id)}
+                    onToggleSelect={() => toggleSelectedForReview(c.id)}
+                    formattedDate={formatCapturedAt(c.capturedAt)}
+                    statusLabel={translateStatus(c.status)}
+                    actions={
+                      <>
+                        <label className="sr-only" htmlFor={`folder-${c.id}`}>
+                          {t('captureFolder')}
+                        </label>
+                        <Select
+                          id={`folder-${c.id}`}
+                          value={c.folderId ?? ''}
+                          onChange={(e) =>
+                            assignFolderMutation.mutate({
+                              inboxItemId: c.id,
+                              folderId: e.target.value || null,
+                            })
+                          }
+                          className="h-10 min-w-[10rem] text-xs"
+                        >
+                          <option value="">{t('captureFolderNone')}</option>
+                          {contentFolders.map((folder) => (
+                            <option key={folder.id} value={folder.id}>
+                              {folder.name}
+                            </option>
+                          ))}
+                        </Select>
+                        <button
+                          type="button"
+                          className="whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-[0.8rem] text-brand-purple"
+                          onClick={() => openSingleReviewModal(c)}
+                        >
+                          {t('reviewOne')}
+                        </button>
+                        <button
+                          type="button"
+                          className="whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-[0.8rem] text-brand-purple"
+                          onClick={() => navigate(`/inbox/${c.id}`)}
+                        >
+                          {t('details')}
+                        </button>
+                      </>
+                    }
+                  />
+                ))}
+              </ul>
+            )}
           </SurfaceContainer>
         </div>
       )}

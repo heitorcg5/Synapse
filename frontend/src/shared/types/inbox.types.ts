@@ -12,6 +12,11 @@ export interface InboxItemResponse {
   folderName?: string | null
   status: string
   capturedAt: string
+  /** Truncated capture text (inbox list). */
+  contentPreview?: string | null
+  /** AI summary suggestion before confirmation (inbox list). */
+  summaryPreview?: string | null
+  tags?: string[] | null
 }
 
 export interface SummaryResponse {

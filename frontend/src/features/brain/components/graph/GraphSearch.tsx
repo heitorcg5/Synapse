@@ -1,4 +1,6 @@
 import { Search } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { fieldClassName } from '@/shared/components/ui/form-styles'
 
 export function GraphSearch({
   value,
@@ -11,15 +13,17 @@ export function GraphSearch({
   suggestions: Array<{ id: string; title: string }>
   onSelect: (id: string) => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className="relative z-0">
-      <div className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0f1422]/80 px-3 text-slate-300 backdrop-blur-sm">
-        <Search size={15} />
+      <div className={`flex h-11 items-center gap-2 px-3 ${fieldClassName}`}>
+        <Search size={15} className="shrink-0 text-app-muted" />
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search ideas by title..."
-          className="h-full w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
+          placeholder={t('graph.searchPlaceholder')}
+          className="h-full w-full border-0 bg-transparent text-sm text-app-text outline-none placeholder:text-app-muted"
         />
       </div>
       {value.trim() && suggestions.length > 0 ? (

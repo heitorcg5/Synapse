@@ -24,7 +24,7 @@ export function Layout() {
           <Link to="/inbox" className="font-heading text-lg font-semibold tracking-wider text-app-text">
             {t('auth.synapse')}
           </Link>
-          <nav className="flex min-w-0 flex-1 items-center gap-2">
+          <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {navItems.map((item) => (
               <NavigationItem key={item.to} to={item.to} label={item.label} />
             ))}

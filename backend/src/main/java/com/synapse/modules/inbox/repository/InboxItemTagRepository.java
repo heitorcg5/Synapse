@@ -2,6 +2,7 @@ package com.synapse.modules.inbox.repository;
 
 import com.synapse.modules.inbox.entity.InboxItemTag;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Repository;
 public interface InboxItemTagRepository extends JpaRepository<InboxItemTag, InboxItemTag.ContentTagId> {
 
     List<InboxItemTag> findByInboxItemId(UUID inboxItemId);
+
+    List<InboxItemTag> findByInboxItemIdIn(Collection<UUID> inboxItemIds);
 
     void deleteByInboxItemId(UUID inboxItemId);
 }

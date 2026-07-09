@@ -87,18 +87,82 @@
   }
 
   button:not(.header-profile-trigger):not(.header-user-menu__row) {
-    transition: all 150ms ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease;
+  }
+}
+
+@layer components {
+  .flashcard-scene {
+    perspective: 1200px;
   }
 
-  button:not(:disabled):not(.header-profile-trigger):not(.header-user-menu__row):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+  .flashcard {
+    position: relative;
+    height: 320px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  button:not(:disabled):not(.header-profile-trigger):not(.header-user-menu__row):active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  .flashcard--flipped {
+    transform: rotateY(180deg);
+  }
+
+  .flashcard-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .flashcard-back {
+    transform: rotateY(180deg);
+  }
+
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(124, 92, 255, 0.5) rgba(255, 255, 255, 0.05);
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    margin-block: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    border: 1px solid rgba(124, 92, 255, 0.2);
+    background: linear-gradient(180deg, rgba(135, 104, 255, 0.55) 0%, rgba(124, 92, 255, 0.45) 100%);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(146, 120, 255, 0.75) 0%, rgba(124, 92, 255, 0.65) 100%);
+  }
+
+  [data-theme='light'] .app-scrollbar {
+    scrollbar-color: rgba(124, 92, 255, 0.45) rgba(107, 114, 128, 0.12);
+  }
+
+  [data-theme='light'] .app-scrollbar::-webkit-scrollbar-track {
+    background: rgba(107, 114, 128, 0.1);
+  }
+
+  [data-theme='light'] .app-scrollbar::-webkit-scrollbar-thumb {
+    border-color: rgba(124, 92, 255, 0.25);
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.5) 0%, rgba(108, 78, 235, 0.4) 100%);
   }
 }
 

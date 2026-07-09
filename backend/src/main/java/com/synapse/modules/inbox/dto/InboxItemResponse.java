@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -23,4 +24,10 @@ public class InboxItemResponse {
     private String folderName;
     private String status;
     private Instant capturedAt;
+    /** Truncated capture text for inbox list display (avoids large payloads). */
+    private String contentPreview;
+    /** Truncated AI summary suggestion before user confirmation (not final knowledge). */
+    private String summaryPreview;
+    /** AI-suggested tags assigned during processing (pre-confirmation). */
+    private List<String> tags;
 }
